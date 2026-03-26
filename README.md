@@ -21,12 +21,6 @@ WizUP provides an intelligent and aesthetically pleasing platform to connect Stu
 
 ---
 
-##  Repository Structure
-
-The project has been streamlined into a flat, "GitHub Pages-ready" structure for easy hosting:
-
----
-
 ## Technology Stack
 
 1.  **Core Interface**: HTML5, Vanilla JavaScript (ES6+), and pure CSS structural frameworks.
