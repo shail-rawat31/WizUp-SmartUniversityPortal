@@ -1,0 +1,200 @@
+Features :
+
+1. Time Table is provided in the directory (TT.jpg)
+2. Extract The subjects, Faculty Names, Time of classes and Subject code of each subject of specific course
+3. Then we need 40 student logins, faculty logins that will be extacted from time table and one HOD login, and admin login for the developer roles
+4. Logins will be saved on firebase (supabase) database - uid/email/password categorised for each roles.
+
+
+5. For Student these features :
+a. Attendance predictor with last working day 
+b. Leaves Option (Documents are stored on Database (Supabase)
+c. Internal Marks ---> Performance Chart (generated on the basis of internal marks)
+d. Real Time Attendance that is stored on databse(supabase)
+ 
+ 
+
+6. For Faculty :
+a. portal for attendance marking according to class timing
+b. portal for marking rubrics based marks of assignments(marks out of 10) , MST(Marks out of 20) , Attendance marks(marks out of 2)
+c. timetable for them according to provided time table
+d. Create assignments with deadlines
+e. announcement posting, Lecture substitution management ,Classroom allocation system,Lab scheduling,discussions forms
+f. Apply for leave (CL/EL/OD), Workload distribution tracking, Feedback collection (student feedback on faculty)
+
+
+7. For HODs :
+Portal contains :
+a. Approval of medical, general and duty leave
+b. Approve lesson plans
+c. Approve leave requests
+d. Department performance analytics
+e. Detention eligibility (attendance < 75%)
+f. Faculty list & workload distribution
+
+8. Leave Workflow :
+a. For Medical Leave :Student upload document ---> HOD views and forwards to E-Governance ----> E-Governance approvs -----> Students leave is approved and attendance is locked and paused for that period he has selected the medical leave (minimum 3 days and maximum 10) ( 10 leaves per semester )
+
+b . For Duty and General Leave :
+Student uploads document --> Goes to HOD for approval ---> If approves attendance is locked and paused ( duty leave is divided into 2 category : day based duty leave and lecture based duty leave )
+
+9. Perfomance Chart is generated on the basis of internal marks of all subjects and one radar chart is made and shown to student portal
+
+10.dynmic data for each thing that is working on firebase.
+
+11. this are my supabase keys :
+api key = sb_publishable_rmdR3FzBGzOLe2I1VBUbgQ_9FGxQ093
+anon public service based api key  = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeGhiZmJwcXdwZGJtZ3RkY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTY1MTMsImV4cCI6MjA4NzM5MjUxM30.U9wuwWRDsUqKef93fl0C1DLu9l_hQ5zKMT9KhOt24xE
+
+12. I want to host this project on vercel via GitHub : make a separate file name (hoting_guide.txt) to guide how to do it
+
+13. And this is sql structure of my supabase : 
+create extension if not exists "uuid-ossp";
+
+--------------------------------------------------
+-- PROFILES (ALL USERS)
+--------------------------------------------------
+create table profiles (
+  id uuid references auth.users on delete cascade primary key,
+  email text,
+  role text check (role in ('student','faculty','hod','admin')),
+  full_name text,
+  department text,
+  roll_no text,
+  employee_code text,
+  created_at timestamp default now()
+);
+
+--------------------------------------------------
+-- SUBJECTS
+--------------------------------------------------
+create table subjects (
+  id uuid default uuid_generate_v4() primary key,
+  subject_code text,
+  subject_name text,
+  faculty_id uuid references profiles(id),
+  semester int
+);
+
+--------------------------------------------------
+-- TIMETABLE
+--------------------------------------------------
+create table timetable (
+  id uuid default uuid_generate_v4() primary key,
+  subject_id uuid references subjects(id),
+  day text,
+  start_time time,
+  end_time time,
+  room text
+);
+
+--------------------------------------------------
+-- ATTENDANCE
+--------------------------------------------------
+create table attendance (
+  id uuid default uuid_generate_v4() primary key,
+  student_id uuid references profiles(id),
+  subject_id uuid references subjects(id),
+  date date,
+  status text check (status in ('present','absent','leave')),
+  marked_by uuid references profiles(id)
+);
+
+--------------------------------------------------
+-- INTERNAL MARKS
+--------------------------------------------------
+create table internal_marks (
+  id uuid default uuid_generate_v4() primary key,
+  student_id uuid references profiles(id),
+  subject_id uuid references subjects(id),
+  assignment_marks int check (assignment_marks <= 10),
+  mst_marks int check (mst_marks <= 20),
+  attendance_marks int check (attendance_marks <= 2)
+);
+
+--------------------------------------------------
+-- LEAVES
+--------------------------------------------------
+create table leaves (
+  id uuid default uuid_generate_v4() primary key,
+  student_id uuid references profiles(id),
+  type text check (type in ('medical','general','duty')),
+  start_date date,
+  end_date date,
+  document_url text,
+  status text default 'pending'
+);
+
+--------------------------------------------------
+-- ANNOUNCEMENTS
+--------------------------------------------------
+create table announcements (
+  id uuid default uuid_generate_v4() primary key,
+  posted_by uuid references profiles(id),
+  title text,
+  content text,
+  created_at timestamp default now()
+);
+
+--------------------------------------------------
+-- ATTENDANCE SUMMARY VIEW
+--------------------------------------------------
+create view attendance_summary as
+select
+  student_id,
+  count(*) as total_classes,
+  sum(case when status='present' then 1 else 0 end) as present_classes
+from attendance
+group by student_id;
+
+--------------------------------------------------
+-- DETENTION VIEW (<75%)
+--------------------------------------------------
+create view detention_list as
+select
+  student_id,
+  (sum(case when status='present' then 1 else 0 end)::float/count(*))*100 as percentage
+from attendance
+group by student_id
+having (sum(case when status='present' then 1 else 0 end)::float/count(*))*100 < 75;
+
+--------------------------------------------------
+-- RLS
+--------------------------------------------------
+alter table profiles enable row level security;
+alter table attendance enable row level security;
+alter table internal_marks enable row level security;
+alter table leaves enable row level security;
+
+--------------------------------------------------
+-- STUDENT POLICY
+--------------------------------------------------
+create policy "Students view own attendance"
+on attendance for select
+using (auth.uid() = student_id);
+
+create policy "Students view own marks"
+on internal_marks for select
+using (auth.uid() = student_id);
+
+create policy "Students apply leave"
+on leaves for insert
+with check (auth.uid() = student_id);
+
+--------------------------------------------------
+-- FACULTY POLICY
+--------------------------------------------------
+create policy "Faculty mark attendance"
+on attendance for insert
+using (
+  exists (
+    select 1 from profiles
+    where id = auth.uid() and role='faculty'
+  )
+);
+
+
+
+
+
+
