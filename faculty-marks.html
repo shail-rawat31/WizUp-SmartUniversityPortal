@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Enter Marks – WizUP Faculty</title>
+    <meta name="description" content="Faculty marks entry – assignment, MST and attendance marks" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Inter", system-ui, sans-serif;
+            background: url("assets/images/bg1.jpg") center/cover no-repeat fixed;
+            color: #e2e8f0
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 60% 40%, rgba(0, 0, 0, .2), rgba(0, 0, 0, .82));
+            pointer-events: none
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 11px 20px;
+            background: rgba(0, 0, 0, .85);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(89, 130, 97, .2)
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .logo img {
+            width: 80%;
+            display: block
+        }
+
+        .t-title h1 {
+            margin: 0;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: #fff
+        }
+
+        .t-title p {
+            margin: 0;
+            font-size: 11px;
+            color: rgba(226, 232, 240, .6)
+        }
+
+        .spacer {
+            flex: 1
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(86, 211, 100, .9);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700
+        }
+
+        .nav-link:hover {
+            opacity: .8
+        }
+
+        /* Container */
+        .container {
+            width: min(1200px, 96vw);
+            margin: 22px auto 48px;
+            position: relative;
+            z-index: 1
+        }
+
+        /* Card */
+        .card {
+            border: 1px solid rgba(89, 130, 97, .25);
+            background: rgba(10, 20, 12, .65);
+            backdrop-filter: blur(18px);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 16px
+        }
+
+        .card-hd {
+            padding: 13px 18px;
+            border-bottom: 1px solid rgba(89, 130, 97, .2);
+            background: rgba(2, 8, 2, .35);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .card-hd h2 {
+            margin: 0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            color: #e2e8f0
+        }
+
+        .card-bd {
+            padding: 16px
+        }
+
+        /* Selector row */
+        .sel-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            flex-wrap: wrap
+        }
+
+        .form-grp {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 160px
+        }
+
+        label {
+            font-size: 11px;
+            letter-spacing: .6px;
+            text-transform: uppercase;
+            color: rgba(148, 163, 184, .85)
+        }
+
+        select {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(89, 130, 97, .3);
+            background: rgba(2, 8, 2, .5);
+            color: #e2e8f0;
+            font-size: 13px;
+            outline: none;
+            font-family: inherit
+        }
+
+        select:focus {
+            border-color: #598261;
+            box-shadow: 0 0 0 3px rgba(89, 130, 97, .2)
+        }
+
+        .btn-sm {
+            padding: 9px 16px;
+            border-radius: 10px;
+            border: none;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 38px
+        }
+
+        .btn-green {
+            background: linear-gradient(90deg, #3A5A40, #598261);
+            color: #fff
+        }
+
+        .btn-green:hover {
+            opacity: .88
+        }
+
+        .btn-green:disabled {
+            opacity: .6;
+            cursor: not-allowed
+        }
+
+        /* Marks table */
+        .mk-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px
+        }
+
+        .mk-table th {
+            padding: 10px 14px;
+            text-align: left;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: rgba(148, 163, 184, .9);
+            border-bottom: 1px solid rgba(89, 130, 97, .2);
+            background: rgba(2, 8, 2, .25)
+        }
+
+        .mk-table td {
+            padding: 9px 14px;
+            border-bottom: 1px solid rgba(89, 130, 97, .1);
+            color: #e2e8f0
+        }
+
+        .mk-table tr:hover td {
+            background: rgba(255, 255, 255, .02)
+        }
+
+        .mk-input {
+            width: 70px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(89, 130, 97, .3);
+            background: rgba(2, 8, 2, .5);
+            color: #e2e8f0;
+            font-size: 13px;
+            text-align: center;
+            outline: none;
+            font-family: inherit
+        }
+
+        .mk-input:focus {
+            border-color: #598261;
+            box-shadow: 0 0 0 3px rgba(89, 130, 97, .2)
+        }
+
+        .mk-input.over {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, .1)
+        }
+
+        .total-cell {
+            font-weight: 700;
+            color: #86efac
+        }
+
+        .s-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px
+        }
+
+        .s-avatar-sm {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(58, 90, 64, .4);
+            border: 1px solid rgba(89, 130, 97, .4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #86efac
+        }
+
+        .empty {
+            text-align: center;
+            padding: 32px;
+            color: rgba(148, 163, 184, .6);
+            font-size: 13px
+        }
+
+        .empty i {
+            font-size: 30px;
+            margin-bottom: 10px;
+            display: block;
+            opacity: .4
+        }
+
+        /* Save button row */
+        .save-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 18px;
+            border-top: 1px solid rgba(89, 130, 97, .2);
+            background: rgba(2, 8, 2, .2)
+        }
+
+        @media(max-width:700px) {
+            .sel-row {
+                flex-direction: column
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay"></div>
+    <div class="topbar">
+        <div class="logo"><img src="assets/images/LOGO1.png" alt="WizUP" /></div>
+        <div class="t-title">
+            <h1>Enter Marks</h1>
+            <p>Assignment (10) · MST (20) · Attendance (2)</p>
+        </div>
+        <div class="spacer"></div>
+        <a href="faculty-dashboard.html" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+    </div>
+
+    <div class="container">
+        <!-- Subject selector -->
+        <div class="card">
+            <div class="card-hd">
+                <h2>Select Subject</h2>
+            </div>
+            <div class="card-bd">
+                <div class="sel-row">
+                    <div class="form-grp">
+                        <label>Subject</label>
+                        <select id="subSel">
+                            <option value="">— Choose Subject —</option>
+                        </select>
+                    </div>
+                    <button class="btn-sm btn-green" onclick="loadMarksTable()"><i class="fa-solid fa-users"></i> Load
+                        Students</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Marks entry table -->
+        <div class="card" id="marksCard">
+            <div class="card-hd">
+                <h2><i class="fa-solid fa-star" style="color:#ffc559;margin-right:6px"></i>Marks Entry</h2>
+                <div style="display:flex;gap:10px;font-size:11px;color:rgba(148,163,184,.7)">
+                    <span>Assignment /10</span>
+                    <span>MST /20</span>
+                    <span>Attendance /2</span>
+                </div>
+            </div>
+            <div id="marksArea">
+                <div class="empty"><i class="fa-solid fa-star"></i>Select a subject to enter marks</div>
+            </div>
+            <div class="save-row" id="saveRow" style="display:none">
+                <button class="btn-sm btn-green" id="saveBtn" onclick="saveMarks()"><i
+                        class="fa-solid fa-floppy-disk"></i> Save All Marks</button>
+                <span id="saveStatus" style="font-size:12px;color:rgba(148,163,184,.7)"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://vqxhbfbpqwpdbmgtdcik.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeGhiZmJwcXdwZGJtZ3RkY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTY1MTMsImV4cCI6MjA4NzM5MjUxM30.U9wuwWRDsUqKef93fl0C1DLu9l_hQ5zKMT9KhOt24xE";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentFaculty = null;
+        let students = [];
+        let marksMap = {};
+        let currentSubId = null;
+
+        const STATIC_STUDENTS = Array.from({ length: 40 }, (_, i) => ({ id: `s-${i + 1}`, full_name: `Student ${i + 1}`, roll_no: `R${i + 1}` }));
+
+        function toast(msg, type = "success") {
+            const t = document.createElement("div");
+            t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;background:${type === "success" ? "#22c55e" : "#ef4444"};box-shadow:0 8px 24px rgba(0,0,0,.4)`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        async function initPage() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) { window.location.href = "faculty-signin.html"; return; }
+            currentFaculty = session.user;
+
+            const { data: subs } = await db.from("subjects").select("*").eq("faculty_id", currentFaculty.id);
+            const sel = document.getElementById("subSel");
+            if (subs && subs.length) {
+                subs.forEach(s => { const o = document.createElement("option"); o.value = s.id; o.textContent = s.subject_name; sel.appendChild(o); });
+            } else {
+                ["Java Programming", "Software Engineering", "Deep Learning"].forEach((n, i) => { const o = document.createElement("option"); o.value = "sub" + i; o.textContent = n; sel.appendChild(o); });
+            }
+        }
+
+        async function loadMarksTable() {
+            currentSubId = document.getElementById("subSel").value;
+            if (!currentSubId) { toast("Select a subject", "error"); return; }
+
+            const area = document.getElementById("marksArea");
+            area.innerHTML = `<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i>Loading…</div>`;
+
+            // Get students
+            const { data: studs } = await db.from("profiles").select("id,full_name,roll_no").eq("role", "student").order("full_name");
+            students = studs && studs.length ? studs : STATIC_STUDENTS;
+
+            // Get existing marks
+            const { data: existing } = await db.from("internal_marks").select("*").eq("subject_id", currentSubId);
+            marksMap = {};
+            if (existing) { existing.forEach(m => { marksMap[m.student_id] = { assignment: m.assignment_marks || 0, mst: m.mst_marks || 0, att: m.attendance_marks || 0 }; }); }
+
+            renderTable();
+            document.getElementById("saveRow").style.display = "flex";
+        }
+
+        function renderTable() {
+            const area = document.getElementById("marksArea");
+            area.innerHTML = `<div style="max-height:520px;overflow-y:auto">
+    <table class="mk-table">
+      <thead><tr><th>#</th><th>Student</th><th>Roll No</th><th>Assignment (10)</th><th>MST (20)</th><th>Attendance (2)</th><th>Total (32)</th></tr></thead>
+      <tbody id="mRows">
+        ${students.map((s, i) => {
+                const m = marksMap[s.id] || { assignment: 0, mst: 0, att: 0 };
+                const total = m.assignment + m.mst + m.att;
+                return `<tr data-sid="${s.id}">
+            <td>${i + 1}</td>
+            <td><div class="s-pill"><div class="s-avatar-sm">${(s.full_name || "S")[0]}</div>${s.full_name}</div></td>
+            <td>${s.roll_no || "—"}</td>
+            <td><input class="mk-input" type="number" min="0" max="10" value="${m.assignment}" data-field="assignment" data-max="10" oninput="calcTotal(this)"/></td>
+            <td><input class="mk-input" type="number" min="0" max="20" value="${m.mst}" data-field="mst" data-max="20" oninput="calcTotal(this)"/></td>
+            <td><input class="mk-input" type="number" min="0" max="2" value="${m.att}" data-field="att" data-max="2" oninput="calcTotal(this)"/></td>
+            <td class="total-cell" id="tot-${s.id}">${total}/32</td>
+          </tr>`;
+            }).join("")}
+      </tbody>
+    </table>
+  </div>`;
+        }
+
+        function calcTotal(inp) {
+            const max = parseInt(inp.getAttribute("data-max"));
+            let v = parseInt(inp.value) || 0;
+            if (v > max) { v = max; inp.value = max; inp.classList.add("over"); } else { inp.classList.remove("over"); }
+            const row = inp.closest("tr");
+            const sid = row.getAttribute("data-sid");
+            const inputs = row.querySelectorAll(".mk-input");
+            let sum = 0;
+            inputs.forEach(i => { sum += parseInt(i.value) || 0; });
+            document.getElementById("tot-" + sid).textContent = sum + "/32";
+        }
+
+        async function saveMarks() {
+            if (!currentSubId || !students.length) { toast("Nothing to save", "error"); return; }
+            const btn = document.getElementById("saveBtn");
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving…`;
+            document.getElementById("saveStatus").textContent = "";
+
+            const records = students.map(s => {
+                const row = document.querySelector(`tr[data-sid="${s.id}"]`);
+                const inputs = row ? row.querySelectorAll(".mk-input") : [];
+                const vals = [...inputs].map(i => parseInt(i.value) || 0);
+                return { student_id: s.id, subject_id: currentSubId, assignment_marks: vals[0] || 0, mst_marks: vals[1] || 0, attendance_marks: vals[2] || 0 };
+            });
+
+            // Upsert via delete-then-insert
+            await db.from("internal_marks").delete().eq("subject_id", currentSubId);
+            const { error } = await db.from("internal_marks").insert(records);
+
+            if (error) { toast("Error: " + error.message, "error"); }
+            else { toast(`Marks saved for ${records.length} students!`); document.getElementById("saveStatus").textContent = `Last saved: ${new Date().toLocaleTimeString()}`; }
+
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Save All Marks`;
+        }
+
+        initPage();
+    </script>
+</body>
+
+</html>

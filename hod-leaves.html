@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Leave Management – HOD WizUP</title>
+    <meta name="description" content="HOD leave approval dashboard – medical, general and duty leaves" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Inter", system-ui, sans-serif;
+            background: url("assets/images/bg1.jpg") center/cover no-repeat fixed;
+            color: #e2e8f0
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 60% 40%, rgba(0, 0, 0, .2), rgba(0, 0, 0, .82));
+            pointer-events: none
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 11px 22px;
+            background: rgba(0, 0, 20, .9);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(0, 150, 199, .2)
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .logo img {
+            width: 80%;
+            display: block
+        }
+
+        .t-title h1 {
+            margin: 0;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: #fff
+        }
+
+        .t-title p {
+            margin: 0;
+            font-size: 11px;
+            color: rgba(148, 163, 184, .7)
+        }
+
+        .spacer {
+            flex: 1
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(125, 211, 252, .9);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700
+        }
+
+        /* Layout */
+        .container {
+            width: min(1200px, 96vw);
+            margin: 22px auto 48px;
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 16px;
+            position: relative;
+            z-index: 1
+        }
+
+        /* Filter sidebar */
+        .filter-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px
+        }
+
+        .card {
+            border: 1px solid rgba(0, 150, 199, .2);
+            background: rgba(0, 15, 30, .65);
+            backdrop-filter: blur(16px);
+            border-radius: 14px;
+            overflow: hidden
+        }
+
+        .card-hd {
+            padding: 13px 18px;
+            border-bottom: 1px solid rgba(0, 150, 199, .15);
+            background: rgba(0, 8, 20, .4);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .card-hd h2 {
+            margin: 0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: .7px
+        }
+
+        .card-bd {
+            padding: 14px
+        }
+
+        /* Filters */
+        .filter-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(0, 150, 199, .06);
+            border: 1px solid rgba(0, 150, 199, .12);
+            color: rgba(148, 163, 184, .85);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 6px;
+            transition: .15s
+        }
+
+        .filter-btn:hover {
+            background: rgba(0, 150, 199, .15)
+        }
+
+        .filter-btn.active {
+            background: rgba(0, 150, 199, .25);
+            border-color: rgba(0, 150, 199, .5);
+            color: #7dd3fc
+        }
+
+        .f-count {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 99px;
+            background: rgba(0, 150, 199, .2);
+            border: 1px solid rgba(0, 150, 199, .3);
+            color: #7dd3fc
+        }
+
+        /* Stats summary */
+        .sum-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px
+        }
+
+        .sum-item {
+            text-align: center;
+            padding: 12px;
+            background: rgba(0, 8, 20, .35);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 150, 199, .15)
+        }
+
+        .sum-item .sv {
+            font-size: 22px;
+            font-weight: 800
+        }
+
+        .sum-item .sl {
+            font-size: 10px;
+            color: rgba(148, 163, 184, .7);
+            text-transform: uppercase;
+            margin-top: 2px
+        }
+
+        /* Main area */
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            gap: 12px
+        }
+
+        /* Leave card */
+        .leave-card {
+            background: rgba(0, 15, 30, .65);
+            border: 1px solid rgba(0, 150, 199, .2);
+            backdrop-filter: blur(12px);
+            border-radius: 14px;
+            padding: 16px 20px;
+            transition: border-color .15s
+        }
+
+        .leave-card:hover {
+            border-color: rgba(0, 150, 199, .4)
+        }
+
+        .lc-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px
+        }
+
+        .lc-person {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .lc-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(0, 150, 199, .25);
+            border: 2px solid rgba(0, 150, 199, .4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: #7dd3fc;
+            flex-shrink: 0
+        }
+
+        .lc-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #e2e8f0
+        }
+
+        .lc-meta {
+            font-size: 11px;
+            color: rgba(148, 163, 184, .75);
+            margin-top: 2px
+        }
+
+        .lc-badges {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 4px 12px;
+            border-radius: 99px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .3px
+        }
+
+        .b-medical {
+            background: rgba(239, 68, 68, .15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, .3)
+        }
+
+        .b-general {
+            background: rgba(99, 102, 241, .15);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, .3)
+        }
+
+        .b-duty {
+            background: rgba(245, 158, 11, .15);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, .3)
+        }
+
+        .b-faculty-leave {
+            background: rgba(34, 197, 94, .15);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, .3)
+        }
+
+        .b-pending {
+            background: rgba(245, 158, 11, .15);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, .3)
+        }
+
+        .b-approved {
+            background: rgba(34, 197, 94, .15);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, .3)
+        }
+
+        .b-rejected {
+            background: rgba(239, 68, 68, .15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, .3)
+        }
+
+        .lc-details {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+            font-size: 12px
+        }
+
+        .lc-detail .dl {
+            color: rgba(148, 163, 184, .65);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 3px
+        }
+
+        .lc-detail .dv {
+            color: #e2e8f0;
+            font-weight: 600
+        }
+
+        .lc-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap
+        }
+
+        .act-btn {
+            padding: 8px 18px;
+            border-radius: 10px;
+            border: none;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: .2s
+        }
+
+        .btn-approve {
+            background: rgba(34, 197, 94, .2);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, .35)
+        }
+
+        .btn-approve:hover {
+            background: rgba(34, 197, 94, .35)
+        }
+
+        .btn-reject {
+            background: rgba(239, 68, 68, .12);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, .25)
+        }
+
+        .btn-reject:hover {
+            background: rgba(239, 68, 68, .22)
+        }
+
+        .btn-req {
+            background: rgba(0, 150, 199, .1);
+            color: #7dd3fc;
+            border: 1px solid rgba(0, 150, 199, .2)
+        }
+
+        .lc-comment {
+            margin-top: 10px
+        }
+
+        .lc-comment input {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 150, 199, .2);
+            background: rgba(0, 8, 20, .5);
+            color: #e2e8f0;
+            font-size: 12px;
+            outline: none
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: rgba(148, 163, 184, .55);
+            font-size: 13px
+        }
+
+        .empty i {
+            font-size: 36px;
+            margin-bottom: 12px;
+            display: block;
+            opacity: .4
+        }
+
+        /* Filter tabs */
+        .tab-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px
+        }
+
+        .tab-btn {
+            padding: 7px 16px;
+            border-radius: 99px;
+            border: 1px solid rgba(0, 150, 199, .2);
+            background: rgba(0, 150, 199, .06);
+            color: rgba(148, 163, 184, .85);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .15s
+        }
+
+        .tab-btn:hover {
+            background: rgba(0, 150, 199, .15)
+        }
+
+        .tab-btn.active {
+            background: rgba(0, 150, 199, .3);
+            border-color: #0096C7;
+            color: #7dd3fc
+        }
+
+        @media(max-width:900px) {
+            .container {
+                grid-template-columns: 1fr
+            }
+
+            .lc-details {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay"></div>
+    <div class="topbar">
+        <div class="logo"><img src="assets/images/LOGO1.png" alt="WizUP" /></div>
+        <div class="t-title">
+            <h1>Leave Management</h1>
+            <p>Review and approve student & faculty leave requests</p>
+        </div>
+        <div class="spacer"></div>
+        <a href="hod-dashboard.html" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+    </div>
+
+    <div class="container">
+        <!-- Filter sidebar -->
+        <div class="filter-panel">
+            <div class="card">
+                <div class="card-hd">
+                    <h2>Filter</h2>
+                </div>
+                <div class="card-bd">
+                    <button class="filter-btn active" id="fAll" onclick="setFilter('all')">All Requests <span
+                            class="f-count" id="cnt-all">0</span></button>
+                    <button class="filter-btn" id="fPending" onclick="setFilter('pending')">Pending <span
+                            class="f-count" id="cnt-pending">0</span></button>
+                    <button class="filter-btn" id="fApproved" onclick="setFilter('approved')">Approved <span
+                            class="f-count" id="cnt-approved">0</span></button>
+                    <button class="filter-btn" id="fRejected" onclick="setFilter('rejected')">Rejected <span
+                            class="f-count" id="cnt-rejected">0</span></button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd">
+                    <h2>Summary</h2>
+                </div>
+                <div class="card-bd">
+                    <div class="sum-grid">
+                        <div class="sum-item">
+                            <div class="sv" id="s-total" style="color:#7dd3fc">0</div>
+                            <div class="sl">Total</div>
+                        </div>
+                        <div class="sum-item">
+                            <div class="sv" id="s-pending" style="color:#fcd34d">0</div>
+                            <div class="sl">Pending</div>
+                        </div>
+                        <div class="sum-item">
+                            <div class="sv" id="s-approved" style="color:#86efac">0</div>
+                            <div class="sl">Approved</div>
+                        </div>
+                        <div class="sum-item">
+                            <div class="sv" id="s-rejected" style="color:#fca5a5">0</div>
+                            <div class="sl">Rejected</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leave list -->
+        <div class="main-area">
+            <div class="tab-row">
+                <button class="tab-btn active" id="tabAll" onclick="setTypeFilter('all')">All Types</button>
+                <button class="tab-btn" id="tabMedical" onclick="setTypeFilter('medical')">Medical</button>
+                <button class="tab-btn" id="tabGeneral" onclick="setTypeFilter('general')">General</button>
+                <button class="tab-btn" id="tabDuty" onclick="setTypeFilter('duty')">Duty</button>
+                <button class="tab-btn" id="tabFaculty" onclick="setTypeFilter('faculty')">Faculty</button>
+            </div>
+            <div id="leaveArea">
+                <div class="empty"><i class="fa-solid fa-spinner fa-spin"></i>Loading leave requests…</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://vqxhbfbpqwpdbmgtdcik.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeGhiZmJwcXdwZGJtZ3RkY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTY1MTMsImV4cCI6MjA4NzM5MjUxM30.U9wuwWRDsUqKef93fl0C1DLu9l_hQ5zKMT9KhOt24xE";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let allLeaves = [];
+        let statusFilter = "all";
+        let typeFilter = "all";
+
+        // Static fallback leaves
+        const STATIC_LEAVES = [
+            { id: "sl1", type: "medical", status: "pending", start_date: "2025-02-20", end_date: "2025-02-24", days: 5, profiles: { full_name: "Arjun Sharma" }, reason: "Viral fever – doctor advised rest", documents: true },
+            { id: "sl2", type: "general", status: "pending", start_date: "2025-02-22", end_date: "2025-02-22", days: 1, profiles: { full_name: "Pooja Mehta" }, reason: "Family function – sister's wedding" },
+            { id: "sl3", type: "duty", status: "approved", start_date: "2025-02-18", end_date: "2025-02-19", days: 2, profiles: { full_name: "Rahul Verma" }, reason: "Inter-college cricket tournament – Jaipur" },
+            { id: "sl4", type: "medical", status: "rejected", start_date: "2025-02-10", end_date: "2025-02-11", days: 2, profiles: { full_name: "Sneha Patel" }, reason: "Submitted medical proof late" },
+            { id: "sl5", type: "general", status: "pending", start_date: "2025-02-25", end_date: "2025-02-25", days: 1, profiles: { full_name: "Kabir Khan" }, reason: "Personal emergency – urgent travel" },
+        ];
+
+        function toast(msg, type = "success") {
+            const t = document.createElement("div");
+            t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;background:${type === "success" ? "#22c55e" : "#ef4444"};box-shadow:0 8px 24px rgba(0,0,0,.4)`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        function setFilter(f) {
+            statusFilter = f;
+            ["fAll", "fPending", "fApproved", "fRejected"].forEach(id => document.getElementById(id).classList.remove("active"));
+            document.getElementById("f" + f.charAt(0).toUpperCase() + f.slice(1)).classList.add("active");
+            render();
+        }
+        function setTypeFilter(t) {
+            typeFilter = t;
+            ["tabAll", "tabMedical", "tabGeneral", "tabDuty", "tabFaculty"].forEach(id => document.getElementById(id).classList.remove("active"));
+            document.getElementById("tab" + t.charAt(0).toUpperCase() + t.slice(1)).classList.add("active");
+            render();
+        }
+
+        function getFiltered() {
+            return allLeaves.filter(l => {
+                const matchStatus = statusFilter === "all" || l.status === statusFilter;
+                const matchType = typeFilter === "all" || (typeFilter === "faculty" ? l.faculty_id : l.type === typeFilter);
+                return matchStatus && matchType;
+            });
+        }
+
+        function updateCounts() {
+            const total = allLeaves.length;
+            const pend = allLeaves.filter(l => l.status === "pending").length;
+            const appr = allLeaves.filter(l => l.status === "approved").length;
+            const rejt = allLeaves.filter(l => l.status === "rejected").length;
+
+            document.getElementById("cnt-all").textContent = total;
+            document.getElementById("cnt-pending").textContent = pend;
+            document.getElementById("cnt-approved").textContent = appr;
+            document.getElementById("cnt-rejected").textContent = rejt;
+            document.getElementById("s-total").textContent = total;
+            document.getElementById("s-pending").textContent = pend;
+            document.getElementById("s-approved").textContent = appr;
+            document.getElementById("s-rejected").textContent = rejt;
+        }
+
+        function typeClass(t) { const m = { medical: "b-medical", general: "b-general", duty: "b-duty", faculty: "b-faculty-leave" }; return m[t] || "b-general"; }
+        function statusClass(s) { const m = { pending: "b-pending", approved: "b-approved", rejected: "b-rejected" }; return m[s] || "b-pending"; }
+        function daysBetween(a, b) { return Math.max(1, Math.round((new Date(b) - new Date(a)) / (1000 * 60 * 60 * 24)) + 1); }
+
+        function render() {
+            const filtered = getFiltered();
+            const area = document.getElementById("leaveArea");
+            if (!filtered.length) { area.innerHTML = `<div class="empty"><i class="fa-solid fa-inbox"></i>No leave requests matching filters</div>`; return; }
+
+            area.innerHTML = filtered.map(l => {
+                const name = l.profiles?.full_name || "Student";
+                const days = l.days || daysBetween(l.start_date, l.end_date) || 1;
+                return `<div class="leave-card">
+      <div class="lc-top">
+        <div class="lc-person">
+          <div class="lc-avatar">${(name[0] || "?").toUpperCase()}</div>
+          <div>
+            <div class="lc-name">${name}</div>
+            <div class="lc-meta">${l.created_at ? new Date(l.created_at).toLocaleDateString("en-IN") : "Recent"}</div>
+          </div>
+        </div>
+        <div class="lc-badges">
+          <span class="badge ${typeClass(l.type)}">${(l.type || "general").toUpperCase()}</span>
+          <span class="badge ${statusClass(l.status)}">${(l.status || "pending").toUpperCase()}</span>
+        </div>
+      </div>
+      <div class="lc-details">
+        <div class="lc-detail"><div class="dl">From</div><div class="dv">${l.start_date || "—"}</div></div>
+        <div class="lc-detail"><div class="dl">To</div><div class="dv">${l.end_date || "—"}</div></div>
+        <div class="lc-detail"><div class="dl">Days</div><div class="dv">${days} day(s)</div></div>
+        <div class="lc-detail"><div class="dl">Documents</div><div class="dv">${l.documents ? "Submitted" : "Not attached"}</div></div>
+      </div>
+      <div style="font-size:12px;color:rgba(148,163,184,.8);margin-bottom:12px;padding:8px 12px;background:rgba(0,8,20,.3);border-radius:8px">
+        <strong>Reason:</strong> ${l.reason || l.description || "Not specified"}
+      </div>
+      ${l.status === "pending" ? `
+      <div class="lc-comment"><input type="text" id="cmt-${l.id}" placeholder="HOD comment (optional)…" style="margin-bottom:8px"/></div>
+      <div class="lc-actions">
+        <button class="act-btn btn-approve" onclick="actLeave('${l.id}','approved')"><i class="fa-solid fa-check"></i> Approve</button>
+        <button class="act-btn btn-reject" onclick="actLeave('${l.id}','rejected')"><i class="fa-solid fa-xmark"></i> Reject</button>
+        <button class="act-btn btn-req" onclick="reqDoc('${l.id}')"><i class="fa-solid fa-paperclip"></i> Request Docs</button>
+      </div>`: `<div style="font-size:12px;color:rgba(148,163,184,.6);font-style:italic">Action taken: ${(l.status || "").toUpperCase()}</div>`}
+    </div>`;
+            }).join("");
+            updateCounts();
+        }
+
+        async function actLeave(id, status) {
+            // Try Supabase
+            const { error } = await db.from("leaves").update({ status, hod_comment: document.getElementById("cmt-" + id)?.value || "" }).eq("id", id);
+            if (!error) {
+                const l = allLeaves.find(x => x.id === id);
+                if (l) l.status = status;
+                render();
+                toast(status === "approved" ? "Leave approved!" : "Leave rejected.");
+                return;
+            }
+            // Fallback: local state
+            const l = allLeaves.find(x => x.id === id);
+            if (l) { l.status = status; render(); toast(status === "approved" ? "Leave approved!" : "Leave rejected."); }
+        }
+
+        function reqDoc(id) { toast("Document request sent to student."); }
+
+        async function loadLeaves() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) { window.location.href = "hod-signin.html"; return; }
+
+            const { data: leaves } = await db.from("leaves").select("*,profiles(full_name)").order("created_at", { ascending: false });
+            if (leaves && leaves.length) { allLeaves = leaves; }
+            else allLeaves = STATIC_LEAVES;
+            updateCounts();
+            render();
+        }
+
+        loadLeaves().catch(() => { allLeaves = STATIC_LEAVES; updateCounts(); render(); });
+    </script>
+</body>
+
+</html>

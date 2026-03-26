@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Faculty Leave – WizUP</title>
+    <meta name="description" content="Faculty leave application – CL, EL, OD requests" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --glass: rgba(10, 20, 12, .65);
+            --border: rgba(89, 130, 97, .25);
+            --text: #e2e8f0;
+            --muted: rgba(148, 163, 184, .75);
+            --accent: #598261;
+            --agreen: rgba(86, 211, 100, .9)
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Inter", system-ui, sans-serif;
+            background: url("assets/images/bg1.jpg") center/cover no-repeat fixed;
+            color: var(--text)
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 60% 40%, rgba(0, 0, 0, .2), rgba(0, 0, 0, .82));
+            pointer-events: none
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 11px 20px;
+            background: rgba(0, 0, 0, .85);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border)
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .logo img {
+            width: 80%;
+            display: block
+        }
+
+        .t-title h1 {
+            margin: 0;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: #fff
+        }
+
+        .t-title p {
+            margin: 0;
+            font-size: 11px;
+            color: var(--muted)
+        }
+
+        .spacer {
+            flex: 1
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--agreen);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700
+        }
+
+        /* Layout */
+        .container {
+            width: min(1100px, 95vw);
+            margin: 22px auto 48px;
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            gap: 16px;
+            position: relative;
+            z-index: 1
+        }
+
+        /* Card */
+        .card {
+            border: 1px solid var(--border);
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border-radius: 16px;
+            overflow: hidden
+        }
+
+        .card-hd {
+            padding: 13px 18px;
+            border-bottom: 1px solid rgba(89, 130, 97, .2);
+            background: rgba(2, 8, 2, .35);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .card-hd h2 {
+            margin: 0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: .7px
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 5px 11px;
+            border-radius: 99px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .07);
+            color: var(--muted)
+        }
+
+        .card-bd {
+            padding: 18px
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            letter-spacing: .6px;
+            text-transform: uppercase;
+            color: rgba(226, 232, 240, .85);
+            margin-bottom: 6px
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 14px
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(89, 130, 97, .3);
+            background: rgba(2, 8, 2, .45);
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+            font-family: inherit
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #598261;
+            box-shadow: 0 0 0 3px rgba(89, 130, 97, .18)
+        }
+
+        textarea {
+            min-height: 88px;
+            resize: vertical
+        }
+
+        .help {
+            margin-top: 5px;
+            font-size: 11px;
+            color: rgba(226, 232, 240, .55)
+        }
+
+        .err {
+            margin-top: 5px;
+            font-size: 11px;
+            color: #fb7185;
+            display: none
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            align-items: center
+        }
+
+        .btn {
+            appearance: none;
+            border: none;
+            cursor: pointer;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            letter-spacing: .4px;
+            color: #0d1117;
+            background: linear-gradient(90deg, #3A5A40, #598261);
+            box-shadow: 0 8px 20px rgba(58, 90, 64, .3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            transition: .2s
+        }
+
+        .btn:hover {
+            opacity: .88
+        }
+
+        .btn:disabled {
+            opacity: .55;
+            cursor: not-allowed
+        }
+
+        .btn.secondary {
+            color: var(--text);
+            background: rgba(255, 255, 255, .08);
+            border: 1px solid rgba(255, 255, 255, .12);
+            box-shadow: none
+        }
+
+        .btn.danger {
+            color: #fff;
+            background: rgba(251, 113, 133, .18);
+            border: 1px solid rgba(251, 113, 133, .35)
+        }
+
+        .btn.small {
+            padding: 7px 12px;
+            font-size: 12px;
+            border-radius: 10px
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid rgba(13, 17, 23, .3);
+            border-top-color: rgba(13, 17, 23, .9);
+            animation: spin .8s linear infinite
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* Leave type tags */
+        .type-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px
+        }
+
+        .type-tag {
+            padding: 7px 14px;
+            border-radius: 99px;
+            border: 1px solid rgba(89, 130, 97, .3);
+            background: rgba(89, 130, 97, .08);
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            transition: .15s
+        }
+
+        .type-tag.active {
+            background: rgba(89, 130, 97, .3);
+            border-color: #598261;
+            color: #86efac
+        }
+
+        /* Stepper */
+        .stepper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px
+        }
+
+        .step {
+            border: 1px solid rgba(89, 130, 97, .2);
+            background: rgba(2, 8, 2, .3);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 3px;
+            background: rgba(148, 163, 184, .4);
+            flex-shrink: 0
+        }
+
+        .step.done .dot {
+            background: rgba(34, 197, 94, .9)
+        }
+
+        .step.active .dot {
+            background: rgba(245, 158, 11, .9)
+        }
+
+        .step.rejected .dot {
+            background: rgba(251, 113, 133, .9)
+        }
+
+        .step h3 {
+            margin: 0;
+            font-size: 12px;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            color: #e2e8f0
+        }
+
+        .step p {
+            margin: 4px 0 0;
+            font-size: 12px;
+            color: rgba(148, 163, 184, .75);
+            line-height: 1.4
+        }
+
+        /* History */
+        .hist-item {
+            padding: 12px;
+            background: rgba(2, 8, 2, .3);
+            border-radius: 10px;
+            border: 1px solid rgba(89, 130, 97, .2);
+            margin-bottom: 8px
+        }
+
+        .hi-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px
+        }
+
+        .hi-type {
+            font-size: 12px;
+            font-weight: 800;
+            color: #e2e8f0;
+            text-transform: uppercase
+        }
+
+        .hi-status {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-weight: 700
+        }
+
+        .s-pending {
+            background: rgba(245, 158, 11, .15);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, .3)
+        }
+
+        .s-approved {
+            background: rgba(34, 197, 94, .15);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, .3)
+        }
+
+        .s-rejected {
+            background: rgba(239, 68, 68, .15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, .3)
+        }
+
+        .hi-dates {
+            font-size: 11px;
+            color: rgba(148, 163, 184, .7)
+        }
+
+        @media(max-width:860px) {
+            .container {
+                grid-template-columns: 1fr
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay"></div>
+    <div class="topbar">
+        <div class="logo"><img src="assets/images/LOGO1.png" alt="WizUP" /></div>
+        <div class="t-title">
+            <h1>Leave Application</h1>
+            <p>Apply for CL / EL / OD – Faculty Portal</p>
+        </div>
+        <div class="spacer"></div>
+        <a href="faculty-dashboard.html" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+    </div>
+
+    <main class="container">
+        <!-- Form -->
+        <div class="card">
+            <div class="card-hd">
+                <h2>Leave Request</h2>
+                <span class="badge" id="semBadge">Sem: —</span>
+            </div>
+            <div class="card-bd">
+                <div class="type-tags">
+                    <button class="type-tag active" id="tagCL" onclick="setLeaveType('CL')"><i
+                            class="fa-solid fa-calendar-xmark"></i> Casual Leave</button>
+                    <button class="type-tag" id="tagEL" onclick="setLeaveType('EL')"><i
+                            class="fa-solid fa-calendar-plus"></i> Earned Leave</button>
+                    <button class="type-tag" id="tagOD" onclick="setLeaveType('OD')"><i
+                            class="fa-solid fa-briefcase"></i> On Duty</button>
+                </div>
+
+                <div class="form-grid">
+                    <div>
+                        <label>From Date</label>
+                        <input type="date" id="fromDate" />
+                        <div class="err" id="fromErr"></div>
+                    </div>
+                    <div>
+                        <label>To Date</label>
+                        <input type="date" id="toDate" />
+                        <div class="err" id="toErr"></div>
+                    </div>
+                    <div>
+                        <label>Reason</label>
+                        <input type="text" id="reason" placeholder="Reason for leave…" />
+                        <div class="err" id="rsnErr"></div>
+                    </div>
+                    <div>
+                        <label>Number of Days</label>
+                        <input type="text" id="numDays" placeholder="Auto-calculated" readonly />
+                    </div>
+                </div>
+
+                <div style="margin-bottom:14px">
+                    <label>Supporting Document (for EL/OD)</label>
+                    <input type="file" id="doc" accept=".pdf,.jpg,.jpeg,.png" />
+                    <div class="help" id="docMeta">Optional: upload if applicable</div>
+                </div>
+
+                <div>
+                    <label>Additional Notes</label>
+                    <textarea id="notes" placeholder="Substitute arrangement or details…"></textarea>
+                </div>
+
+                <div class="row">
+                    <button class="btn" id="submitBtn"><span id="spin" class="spinner" style="display:none"></span>
+                        Submit Leave</button>
+                    <button class="btn secondary" onclick="resetForm()">Reset</button>
+                    <button class="btn danger small" onclick="clearHistory()">Clear History</button>
+                </div>
+
+                <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;font-size:11px">
+                    <span
+                        style="padding:5px 10px;border-radius:99px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted)">Type:
+                        <strong id="typeLabel">Casual Leave</strong></span>
+                    <span id="usedPill"
+                        style="padding:5px 10px;border-radius:99px;color:rgba(253,230,138,.9);background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25)">Used:
+                        0 this sem</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workflow + History -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="card">
+                <div class="card-hd">
+                    <h2>Workflow</h2>
+                    <span class="badge" id="statusBadge">Draft</span>
+                </div>
+                <div class="card-bd">
+                    <div class="stepper">
+                        <div class="step active" data-step="draft">
+                            <div class="dot"></div>
+                            <div>
+                                <h3>Faculty Submits</h3>
+                                <p>Fill in leave details and submit to HOD.</p>
+                            </div>
+                        </div>
+                        <div class="step" data-step="hod">
+                            <div class="dot"></div>
+                            <div>
+                                <h3>HOD Review</h3>
+                                <p>HOD approves or rejects. Workload is redistributed on approval.</p>
+                            </div>
+                        </div>
+                        <div class="step" data-step="done">
+                            <div class="dot"></div>
+                            <div>
+                                <h3>Completed</h3>
+                                <p>Leave recorded and updated in departmental records.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-hd">
+                    <h2>Leave History</h2>
+                </div>
+                <div class="card-bd" id="historyArea">
+                    <div style="text-align:center;padding:20px;color:rgba(148,163,184,.6);font-size:13px">No leave
+                        history yet</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = "https://vqxhbfbpqwpdbmgtdcik.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeGhiZmJwcXdwZGJtZ3RkY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTY1MTMsImV4cCI6MjA4NzM5MjUxM30.U9wuwWRDsUqKef93fl0C1DLu9l_hQ5zKMT9KhOt24xE";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const KEY = "wizup.facultyLeave.v1";
+        let leaveType = "CL";
+        let currentUser = null;
+
+        function load() { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch { return {}; } }
+        function save(s) { localStorage.setItem(KEY, JSON.stringify(s)); }
+        const state = load();
+        if (!state.reqs) state.reqs = [];
+        if (!state.cur) state.cur = { status: "draft" };
+
+        function setLeaveType(t) {
+            leaveType = t;
+            ["CL", "EL", "OD"].forEach(x => { document.getElementById("tag" + x).classList.toggle("active", x === t); });
+            document.getElementById("typeLabel").textContent = { CL: "Casual Leave", EL: "Earned Leave", OD: "On Duty" }[t];
+        }
+
+        function semKey(d) { const dt = new Date(d); const y = dt.getFullYear(); return `${y}-${dt.getMonth() <= 5 ? "S1" : "S2"}`; }
+        function daysBetween(a, b) { return Math.max(1, Math.round((new Date(b) - new Date(a)) / (1000 * 60 * 60 * 24)) + 1); }
+
+        function toast(msg, type = "success") {
+            const t = document.createElement("div");
+            t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;background:${type === "success" ? "#22c55e" : "#ef4444"};box-shadow:0 8px 24px rgba(0,0,0,.4)`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        function err(id, msg) { const e = document.getElementById(id); if (!msg) { e.style.display = "none"; return; } e.style.display = "block"; e.textContent = msg; }
+        function clearErrors() { ["fromErr", "toErr", "rsnErr"].forEach(id => err(id, "")); }
+
+        function validate() {
+            clearErrors();
+            let ok = true;
+            if (!document.getElementById("fromDate").value) { err("fromErr", "From date required."); ok = false; }
+            if (!document.getElementById("toDate").value) { err("toErr", "To date required."); ok = false; }
+            else if (document.getElementById("fromDate").value && new Date(document.getElementById("toDate").value) < new Date(document.getElementById("fromDate").value)) { err("toErr", "To date must be after from."); ok = false; }
+            if (!document.getElementById("reason").value.trim()) { err("rsnErr", "Reason required."); ok = false; }
+            return ok;
+        }
+
+        function resetForm() {
+            ["fromDate", "toDate", "reason", "notes"].forEach(id => document.getElementById(id).value = "");
+            document.getElementById("numDays").value = "";
+            document.getElementById("doc").value = "";
+            document.getElementById("docMeta").textContent = "Optional: upload if applicable";
+            clearErrors();
+        }
+
+        function refreshSem() {
+            const from = document.getElementById("fromDate").value || new Date().toISOString().slice(0, 10);
+            const to = document.getElementById("toDate").value;
+            document.getElementById("semBadge").textContent = "Sem: " + semKey(from);
+            if (from && to) document.getElementById("numDays").value = daysBetween(from, to) + " day(s)";
+            const sk = semKey(from);
+            const used = state.reqs.filter(r => r.semKey === sk).length;
+            document.getElementById("usedPill").textContent = `Used: ${used} this sem`;
+        }
+
+        ["fromDate", "toDate"].forEach(id => document.getElementById(id).addEventListener("change", refreshSem));
+
+        document.getElementById("doc").addEventListener("change", e => {
+            const f = e.target.files[0];
+            document.getElementById("docMeta").textContent = f ? `Attached: ${f.name}` : "Optional: upload if applicable";
+        });
+
+        function renderStepper() {
+            document.getElementById("statusBadge").textContent = { draft: "Draft", pending: "Pending HOD", approved: "Approved ✓", rejected: "Rejected ✗" }[state.cur.status] || "Draft";
+            const map = { draft: { draft: "active" }, pending: { draft: "done", hod: "active" }, approved: { draft: "done", hod: "done", done: "done" }, rejected: { draft: "done", hod: "rejected" } };
+            const m = map[state.cur.status] || { draft: "active" };
+            document.querySelectorAll(".step").forEach(s => {
+                s.classList.remove("done", "active", "rejected");
+                const k = s.getAttribute("data-step");
+                if (m[k]) s.classList.add(m[k]);
+            });
+        }
+
+        function renderHistory() {
+            const el = document.getElementById("historyArea");
+            if (!state.reqs.length) { el.innerHTML = `<div style="text-align:center;padding:20px;color:rgba(148,163,184,.6);font-size:13px">No leave history yet</div>`; return; }
+            el.innerHTML = [...state.reqs].reverse().map(r => `<div class="hist-item">
+    <div class="hi-top">
+      <span class="hi-type">${r.leaveType || "Leave"}</span>
+      <span class="hi-status s-${r.status || "pending"}">${{ pending: "Pending", approved: "Approved", rejected: "Rejected" }[r.status || "pending"] || "Pending"}</span>
+    </div>
+    <div class="hi-dates">${r.from} → ${r.to || r.from} (${r.days || 1} day(s)) • <span style="text-transform:uppercase">${r.reason || "—"}</span></div>
+  </div>`).join("");
+        }
+
+        document.getElementById("submitBtn").addEventListener("click", async () => {
+            if (!validate()) return;
+            const btn = document.getElementById("submitBtn");
+            btn.disabled = true; document.getElementById("spin").style.display = "inline-block";
+            await new Promise(r => setTimeout(r, 500));
+            const from = document.getElementById("fromDate").value;
+            const to = document.getElementById("toDate").value;
+            const rec = { id: "FL-" + Math.random().toString(16).slice(2, 10).toUpperCase(), leaveType, from, to, days: daysBetween(from, to), reason: document.getElementById("reason").value.trim(), notes: document.getElementById("notes").value.trim(), semKey: semKey(from), status: "pending", createdAt: new Date().toISOString() };
+            state.reqs.push(rec);
+            state.cur.status = "pending";
+            save(state);
+
+            // Also save to Supabase if logged in
+            if (currentUser) {
+                await db.from("faculty_leaves").insert({ faculty_id: currentUser.id, type: leaveType.toLowerCase(), start_date: from, end_date: to, reason: rec.reason, status: "pending" }).catch(() => { });
+            }
+
+            btn.disabled = false; document.getElementById("spin").style.display = "none";
+            renderStepper(); renderHistory(); refreshSem();
+            resetForm();
+            toast("Leave submitted to HOD for approval!");
+        });
+
+        function clearHistory() {
+            if (!confirm("Clear leave history?")) return;
+            localStorage.removeItem(KEY);
+            location.reload();
+        }
+
+        async function init() {
+            const { data: { session } } = await db.auth.getSession();
+            if (session) {
+                currentUser = session.user;
+                const { data: profile } = await db.from("profiles").select("full_name").eq("id", currentUser.id).single();
+                if (profile) document.querySelector(".t-title p").textContent = `${profile.full_name} – Faculty Leave Portal`;
+            }
+            refreshSem(); renderStepper(); renderHistory();
+        }
+        init();
+    </script>
+</body>
+
+</html>

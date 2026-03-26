@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Student Sign In – WizUP</title>
+    <meta name="description" content="Student login portal for WizUP University Management System" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Inter", system-ui, sans-serif;
+            color: #fff;
+            background: url("assets/images/bg1.jpg") center/cover no-repeat fixed;
+            display: flex;
+            align-items: center;
+            overflow: hidden
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 70% 40%, rgba(0, 0, 0, .1), rgba(0, 0, 0, .82));
+            pointer-events: none;
+            z-index: 0
+        }
+
+        .page-shell {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start
+        }
+
+        .signin-card {
+            width: 380px;
+            margin-left: 80px;
+            background: rgba(229, 56, 59, .95);
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 25px 60px rgba(178, 31, 45, .55);
+            position: relative
+        }
+
+        .signin-card::before {
+            content: "";
+            position: absolute;
+            inset: -5px;
+            border-radius: 22px;
+            background: rgb(178, 31, 45);
+            z-index: -1
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            opacity: .9;
+            transition: opacity .2s, transform .2s
+        }
+
+        .back-btn:hover {
+            opacity: 1;
+            transform: translateX(-4px)
+        }
+
+        .signin-header {
+            text-align: center;
+            margin-bottom: 22px
+        }
+
+        .avatar {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background: #b21f2d;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, .3)
+        }
+
+        h1 {
+            font-size: 21px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase
+        }
+
+        .subtitle {
+            margin: 6px 0 0;
+            font-size: 12px;
+            opacity: .88
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 14px
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            opacity: .95
+        }
+
+        .input-wrap {
+            position: relative
+        }
+
+        .input-wrap i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: #666
+        }
+
+        input[type=email],
+        input[type=password] {
+            width: 100%;
+            padding: 11px 12px 11px 38px;
+            border: none;
+            border-radius: 9px;
+            font-size: 13px;
+            background: #fff;
+            color: #333;
+            transition: box-shadow .2s;
+            outline: none
+        }
+
+        input:focus {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, .4)
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            margin-bottom: 14px
+        }
+
+        .remember {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer
+        }
+
+        .forgot {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600
+        }
+
+        .forgot:hover {
+            text-decoration: underline
+        }
+
+        .signin-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 999px;
+            background: #b21f2d;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(178, 31, 45, .55);
+            transition: .2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px
+        }
+
+        .signin-btn:hover {
+            background: #9c1a26;
+            transform: translateY(-2px)
+        }
+
+        .signin-btn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+            transform: none
+        }
+
+        .error-msg {
+            background: rgba(239, 68, 68, .15);
+            border: 1px solid rgba(239, 68, 68, .4);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #fca5a5;
+            margin-bottom: 12px;
+            display: none
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            animation: spin .7s linear infinite
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 12px 0;
+            font-size: 11px;
+            opacity: .7
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, .35)
+        }
+
+        .help-text {
+            text-align: center;
+            font-size: 11px;
+            opacity: .88;
+            line-height: 1.5
+        }
+
+        .help-text a {
+            color: #fff;
+            font-weight: 700;
+            text-decoration: none
+        }
+
+        .crest {
+            position: absolute;
+            right: 13%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 360px;
+            height: 360px;
+            border-radius: 50%;
+            background: #000;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, .85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            transition: .3s
+        }
+
+        .crest:hover {
+            transform: translateY(-50%) scale(1.06)
+        }
+
+        .crest img {
+            max-width: 78%;
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .7));
+            transition: .3s
+        }
+
+        .crest:hover img {
+            transform: scale(1.05) rotate(3deg)
+        }
+
+        @media(max-width:900px) {
+            .crest {
+                display: none
+            }
+
+            .signin-card {
+                margin: 0 auto;
+                width: 100%;
+                max-width: 400px
+            }
+
+            .page-shell {
+                justify-content: center;
+                padding: 30px 20px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay"></div>
+    <div class="page-shell">
+        <div class="signin-card">
+            <a href="index.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back to Portal</a>
+            <div class="signin-header">
+                <div class="avatar"><i class="fa-solid fa-user-graduate"></i></div>
+                <h1>Student Sign In</h1>
+                <p class="subtitle">Access your Student Services & Account</p>
+            </div>
+            <div class="error-msg" id="errMsg"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">University Email</label>
+                    <div class="input-wrap"><i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="email" placeholder="student1@wizup.edu" required autocomplete="email" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrap"><i class="fa-solid fa-lock"></i>
+                        <input type="password" id="password" placeholder="Enter your password" required />
+                    </div>
+                </div>
+                <div class="form-options">
+                    <label class="remember"><input type="checkbox" id="rememberMe" /> Remember me</label>
+                    <a href="#" class="forgot">Forgot Password?</a>
+                </div>
+                <button type="submit" class="signin-btn" id="loginBtn">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                </button>
+                <div class="divider">or</div>
+                <p class="help-text">New student? <a href="#">Register here</a><br />Need help? Contact <a
+                        href="#">Student Services</a></p>
+            </form>
+        </div>
+        <div class="crest"><img src="assets/images/LOGO1.png" alt="WizUP Logo" /></div>
+    </div>
+    <script>
+        const SUPABASE_URL = "https://vqxhbfbpqwpdbmgtdcik.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeGhiZmJwcXdwZGJtZ3RkY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTY1MTMsImV4cCI6MjA4NzM5MjUxM30.U9wuwWRDsUqKef93fl0C1DLu9l_hQ5zKMT9KhOt24xE";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const errMsg = document.getElementById("errMsg");
+        const loginBtn = document.getElementById("loginBtn");
+
+        // auto-redirect if already signed in
+        db.auth.getSession().then(({ data: { session } }) => {
+            if (session) window.location.href = "student-dashboard.html";
+        });
+
+        document.getElementById("loginForm").addEventListener("submit", async e => {
+            e.preventDefault();
+            errMsg.style.display = "none";
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = `<span class="spinner"></span> Signing in...`;
+
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+
+            const { data, error } = await db.auth.signInWithPassword({ email, password });
+            if (error) {
+                errMsg.textContent = error.message;
+                errMsg.style.display = "block";
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Sign In`;
+                return;
+            }
+
+            const { data: profile } = await db.from("profiles").select("role").eq("id", data.user.id).single();
+            if (profile?.role !== "student") {
+                await db.auth.signOut();
+                errMsg.textContent = "Access denied. This portal is for Students only.";
+                errMsg.style.display = "block";
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Sign In`;
+                return;
+            }
+            window.location.href = "student-dashboard.html";
+        });
+    </script>
+</body>
+
+</html>

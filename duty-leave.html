@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Duty Leave – WizUP</title>
+    <meta name="description" content="Apply for duty leave – WizUP Student Portal" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --glass: rgba(15, 23, 42, .55);
+            --border: rgba(148, 163, 184, .35);
+            --text: #e5e7eb;
+            --muted: rgba(226, 232, 240, .75);
+            --accent: #f59e0b;
+            --danger: #fb7185
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Inter, system-ui, sans-serif;
+            background: url("assets/images/bg1.jpg") center/cover no-repeat fixed;
+            color: var(--text)
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 70% 40%, rgba(0, 0, 0, .15), rgba(0, 0, 0, .78));
+            pointer-events: none
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, .78);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(255, 255, 255, .07)
+        }
+
+        .logo-box {
+            width: 52px;
+            height: 52px;
+            border-radius: 10px;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, .4)
+        }
+
+        .logo-box img {
+            width: 80%;
+            display: block
+        }
+
+        .t-title h1 {
+            margin: 0;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: .6px
+        }
+
+        .t-title p {
+            margin: 0;
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        .spacer {
+            flex: 1
+        }
+
+        .nav-link {
+            color: rgba(56, 189, 248, .9);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .nav-link:hover {
+            text-decoration: underline
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .06);
+            font-size: 12px
+        }
+
+        .chip img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #ffc559;
+            object-fit: cover
+        }
+
+        .container {
+            width: min(1100px, 94vw);
+            margin: 22px auto 48px;
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            gap: 16px;
+            position: relative;
+            z-index: 1
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            background: var(--glass);
+            backdrop-filter: blur(18px);
+            border-radius: 16px;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, .35);
+            overflow: hidden
+        }
+
+        .card header {
+            padding: 13px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, .07);
+            background: rgba(2, 6, 23, .35)
+        }
+
+        .card header h2 {
+            margin: 0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: .7px
+        }
+
+        .card header .badge {
+            font-size: 11px;
+            padding: 5px 11px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .06);
+            color: var(--muted)
+        }
+
+        .content {
+            padding: 18px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            letter-spacing: .6px;
+            text-transform: uppercase;
+            color: rgba(226, 232, 240, .85);
+            margin-bottom: 6px
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, .3);
+            background: rgba(2, 6, 23, .45);
+            color: var(--text);
+            outline: none;
+            font-family: inherit;
+            font-size: 13px
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: rgba(245, 158, 11, .6);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, .15)
+        }
+
+        textarea {
+            min-height: 88px;
+            resize: vertical
+        }
+
+        .help {
+            margin-top: 5px;
+            font-size: 11px;
+            color: rgba(226, 232, 240, .6)
+        }
+
+        .error {
+            margin-top: 5px;
+            font-size: 11px;
+            color: var(--danger);
+            display: none
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            align-items: center
+        }
+
+        .btn {
+            appearance: none;
+            border: none;
+            cursor: pointer;
+            padding: 10px 16px;
+            border-radius: 14px;
+            font-weight: 700;
+            letter-spacing: .4px;
+            color: #0d1117;
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, .25);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px
+        }
+
+        .btn:disabled {
+            opacity: .55;
+            cursor: not-allowed
+        }
+
+        .btn.secondary {
+            color: var(--text);
+            background: rgba(255, 255, 255, .08);
+            border: 1px solid rgba(255, 255, 255, .12);
+            box-shadow: none
+        }
+
+        .btn.danger {
+            color: #fff;
+            background: rgba(251, 113, 133, .18);
+            border: 1px solid rgba(251, 113, 133, .35)
+        }
+
+        .btn.small {
+            padding: 7px 12px;
+            font-size: 12px;
+            border-radius: 12px
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid rgba(13, 17, 23, .35);
+            border-top-color: rgba(13, 17, 23, .9);
+            animation: spin .8s linear infinite
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .mini {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px
+        }
+
+        .pill {
+            font-size: 11px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .12);
+            color: rgba(226, 232, 240, .8)
+        }
+
+        .pill.good {
+            border-color: rgba(34, 197, 94, .45);
+            color: rgba(167, 243, 208, .95)
+        }
+
+        .pill.bad {
+            border-color: rgba(251, 113, 133, .45);
+            color: rgba(254, 205, 211, .95)
+        }
+
+        .pill.warn {
+            border-color: rgba(245, 158, 11, .45);
+            color: rgba(253, 230, 138, .95)
+        }
+
+        /* type selector */
+        .type-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px
+        }
+
+        .type-tab {
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .06);
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            transition: .2s
+        }
+
+        .type-tab.active {
+            background: rgba(245, 158, 11, .25);
+            border-color: rgba(245, 158, 11, .6);
+            color: #fcd34d
+        }
+
+        /* stepper */
+        .stepper {
+            display: grid;
+            gap: 10px
+        }
+
+        .step {
+            border: 1px solid rgba(148, 163, 184, .25);
+            background: rgba(2, 6, 23, .3);
+            border-radius: 14px;
+            padding: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 3px;
+            background: rgba(148, 163, 184, .45);
+            flex-shrink: 0
+        }
+
+        .step.done .dot {
+            background: rgba(34, 197, 94, .9)
+        }
+
+        .step.active .dot {
+            background: rgba(245, 158, 11, .9)
+        }
+
+        .step.rejected .dot {
+            background: rgba(251, 113, 133, .9)
+        }
+
+        .step h3 {
+            margin: 0;
+            font-size: 12px;
+            letter-spacing: .5px;
+            text-transform: uppercase
+        }
+
+        .step p {
+            margin: 4px 0 0;
+            font-size: 12px;
+            color: rgba(226, 232, 240, .7);
+            line-height: 1.4
+        }
+
+        .rolebar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px
+        }
+
+        .rolebar button {
+            padding: 7px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .12);
+            color: rgba(226, 232, 240, .85);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700
+        }
+
+        .rolebar button.active {
+            border-color: rgba(245, 158, 11, .6);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, .1)
+        }
+
+        @media(max-width:860px) {
+            .container {
+                grid-template-columns: 1fr
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay"></div>
+    <div class="topbar">
+        <div class="logo-box"><img src="assets/images/LOGO1.png" alt="WizUP" /></div>
+        <div class="t-title">
+            <h1>Duty Leave</h1>
+            <p>Apply for day-based or lecture-based duty leave</p>
+        </div>
+        <div class="spacer"></div>
+        <a href="student-dashboard.html" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+        <div class="chip">
+            <img src="assets/images/man.png" alt="Profile" />
+            <span id="userName">Student</span>
+        </div>
+    </div>
+
+    <main class="container">
+        <!-- Form -->
+        <section class="card">
+            <header>
+                <h2>Duty Leave Application</h2>
+                <span class="badge" id="semBadge">Semester: —</span>
+            </header>
+            <div class="content">
+                <div class="type-tabs">
+                    <button class="type-tab active" id="tabDay" onclick="selectType('day')"><i
+                            class="fa-solid fa-calendar-day"></i> Day Based</button>
+                    <button class="type-tab" id="tabLecture" onclick="selectType('lecture')"><i
+                            class="fa-solid fa-clock"></i> Lecture Based</button>
+                </div>
+
+                <div class="grid">
+                    <div>
+                        <label for="fromDate">From date</label>
+                        <input id="fromDate" type="date" />
+                        <div class="error" id="fromErr"></div>
+                    </div>
+                    <div id="toDateWrap">
+                        <label for="toDate">To date</label>
+                        <input id="toDate" type="date" />
+                        <div class="error" id="toErr"></div>
+                    </div>
+                    <div id="lectureWrap" style="display:none">
+                        <label for="lectureSlots">No. of Lectures</label>
+                        <input id="lectureSlots" type="number" min="1" max="8" placeholder="e.g. 2" />
+                    </div>
+                    <div>
+                        <label for="reason">Reason / Purpose</label>
+                        <input id="reason" type="text" placeholder="e.g. Inter-college sports, event representation" />
+                        <div class="error" id="reasonErr"></div>
+                    </div>
+                    <div>
+                        <label for="authority">Authorizing Person</label>
+                        <input id="authority" type="text" placeholder="e.g. Prof. Rahul Singh" />
+                    </div>
+                </div>
+
+                <div style="margin-top:12px">
+                    <label for="doc">Upload supporting document <span style="color:var(--accent)">*</span></label>
+                    <input id="doc" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                    <div class="error" id="docErr"></div>
+                    <div class="help" id="docMeta">Accepted: PDF/JPG/PNG – permission letter or invitation</div>
+                </div>
+
+                <div style="margin-top:12px">
+                    <label for="notes">Additional notes</label>
+                    <textarea id="notes" placeholder="Any details for the HOD approver"></textarea>
+                </div>
+
+                <div class="row">
+                    <button class="btn" id="submitBtn"><span id="spin" class="spinner"
+                            style="display:none"></span>Submit to HOD</button>
+                    <button class="btn secondary" id="resetBtn" type="button">Reset</button>
+                    <button class="btn danger small" id="clearBtn" type="button">Clear History</button>
+                </div>
+
+                <div class="mini">
+                    <span class="pill">Category: <span id="typeLabel">Day Based</span></span>
+                    <span class="pill warn" id="usedPill">Used: 0</span>
+                    <span class="pill" id="quotaPill">Quota: 10 / semester</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Workflow -->
+        <aside class="card">
+            <header>
+                <h2>Approval Workflow</h2>
+                <span class="badge" id="statusBadge">Draft</span>
+            </header>
+            <div class="content">
+                <div class="stepper">
+                    <div class="step active" data-step="draft">
+                        <div class="dot"></div>
+                        <div>
+                            <h3>Student Draft</h3>
+                            <p>Fill the form and upload document, then submit to HOD.</p>
+                        </div>
+                    </div>
+                    <div class="step" data-step="hod">
+                        <div class="dot"></div>
+                        <div>
+                            <h3>HOD Review</h3>
+                            <p>HOD approves or rejects. If approved, attendance is locked for duty period.</p>
+                        </div>
+                    </div>
+                    <div class="step" data-step="done">
+                        <div class="dot"></div>
+                        <div>
+                            <h3>Completed</h3>
+                            <p>Duty leave is recorded and attendance adjusted accordingly.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rolebar">
+                    <button class="active" data-role="student">Student View</button>
+                    <button data-role="hod">HOD View</button>
+                </div>
+                <div class="row" id="actionsRow" style="margin-top:12px"></div>
+
+                <div style="margin-top:14px;font-size:12px;color:rgba(226,232,240,.65);line-height:1.5">
+                    <strong>Note:</strong> Duty leave covers official university events (sports, seminars, cultural
+                    representation). Attendance is locked and paused during approved duty periods.
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        const SUPABASE_URL = "https://vqxhbfbpqwpdbmgtdcik.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeGhiZmJwcXdwZGJtZ3RkY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTY1MTMsImV4cCI6MjA4NzM5MjUxM30.U9wuwWRDsUqKef93fl0C1DLu9l_hQ5zKMT9KhOt24xE";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const KEY = "wizup.dutyLeave.v2";
+        const MAX = 10;
+        let dutyType = "day";
+        let currentUserId = null;
+
+        function selectType(t) {
+            dutyType = t;
+            document.getElementById("tabDay").classList.toggle("active", t === "day");
+            document.getElementById("tabLecture").classList.toggle("active", t === "lecture");
+            document.getElementById("toDateWrap").style.display = t === "day" ? "" : "none";
+            document.getElementById("lectureWrap").style.display = t === "lecture" ? "" : "none";
+            document.getElementById("typeLabel").textContent = t === "day" ? "Day Based" : "Lecture Based";
+        }
+
+        function load() { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch { return {}; } }
+        function save(s) { localStorage.setItem(KEY, JSON.stringify(s)); }
+        function semKey(d) { const dt = new Date(d); const y = dt.getFullYear(); const s = dt.getMonth() <= 5 ? "S1" : "S2"; return `${y}-${s}`; }
+        function days(a, b) { const ms = 24 * 60 * 60 * 1000; const s = Date.UTC(...new Date(a).toISOString().split('T')[0].split('-').map(Number) - 0); const e = Date.UTC(...new Date(b).toISOString().split('T')[0].split('-').map(Number) - 0); return Math.floor((new Date(b) - new Date(a)) / ms) + 1; }
+
+        const state = load();
+        if (!state.reqs) state.reqs = [];
+        if (!state.cur) state.cur = { status: "draft", role: "student" };
+
+        function currentSem() { return semKey(document.getElementById("fromDate").value || new Date().toISOString().slice(0, 10)); }
+        function countUsed(sk) { return state.reqs.filter(r => r.semKey === sk).length; }
+
+        function refreshUI() {
+            const sk = currentSem();
+            document.getElementById("semBadge").textContent = "Semester: " + sk;
+            const u = countUsed(sk);
+            const pill = document.getElementById("usedPill");
+            pill.textContent = "Used: " + u;
+            pill.className = "pill " + (u >= MAX ? "bad" : u >= MAX - 2 ? "warn" : "good");
+        }
+
+        function stepMap() {
+            const s = state.cur.status;
+            if (s === "draft") return { draft: "active" };
+            if (s === "pending_hod") return { draft: "done", hod: "active" };
+            if (s === "approved") return { draft: "done", hod: "done", done: "done" };
+            if (s === "rejected") return { draft: "done", hod: "rejected" };
+            return {};
+        }
+
+        function status2text(s) {
+            if (s === "draft") return "Draft";
+            if (s === "pending_hod") return "Pending HOD";
+            if (s === "approved") return "Approved ✓";
+            if (s === "rejected") return "Rejected ✗";
+            return s;
+        }
+
+        function renderActions() {
+            const el = document.getElementById("actionsRow");
+            el.innerHTML = "";
+            const mk = (label, cls, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn small " + (cls || ""); b.textContent = label; b.addEventListener("click", fn); return b; };
+            if (state.cur.role === "student") {
+                if (state.cur.status === "draft") el.appendChild(mk("Submit", "", () => document.getElementById("submitBtn").click()));
+                else el.appendChild(mk("New Draft", "secondary", () => { resetForm(); setStatus("draft"); }));
+            }
+            if (state.cur.role === "hod") {
+                if (state.cur.status === "pending_hod") {
+                    el.appendChild(mk("Approve", "", () => setStatus("approved")));
+                    el.appendChild(mk("Reject", "danger", () => setStatus("rejected")));
+                } else el.appendChild(Object.assign(mk("No actions", "secondary", () => { }), { disabled: true }));
+            }
+        }
+
+        function setStatus(s) {
+            state.cur.status = s;
+            const last = state.reqs[state.reqs.length - 1];
+            if (last) last.status = s;
+            save(state);
+            render();
+            // Also save to Supabase if approved and user is logged in
+            if (s === "approved" && currentUserId && last) {
+                db.from("leaves").insert({ student_id: currentUserId, type: "duty", start_date: last.from, end_date: last.to || last.from, status: "approved" }).then();
+            }
+        }
+
+        function render() {
+            refreshUI();
+            document.getElementById("statusBadge").textContent = status2text(state.cur.status);
+            const map = stepMap();
+            document.querySelectorAll(".stepper .step").forEach(s => {
+                s.classList.remove("done", "active", "rejected");
+                const k = s.getAttribute("data-step");
+                if (map[k]) s.classList.add(map[k]);
+            });
+            document.querySelectorAll(".rolebar button").forEach(b => {
+                b.classList.toggle("active", b.getAttribute("data-role") === state.cur.role);
+            });
+            renderActions();
+        }
+
+        function err(id, msg) { const e = document.getElementById(id); if (!msg) { e.style.display = "none"; e.textContent = ""; return; } e.style.display = "block"; e.textContent = msg; }
+        function clearErrs() { ["fromErr", "toErr", "reasonErr", "docErr"].forEach(id => err(id, "")); }
+
+        function validate() {
+            clearErrs();
+            let ok = true;
+            const from = document.getElementById("fromDate").value;
+            const reason = document.getElementById("reason").value.trim();
+            const doc = document.getElementById("doc");
+            if (!from) { err("fromErr", "From date required."); ok = false; }
+            if (dutyType === "day") {
+                const to = document.getElementById("toDate").value;
+                if (!to) { err("toErr", "To date required."); ok = false; }
+                else if (new Date(to) < new Date(from)) { err("toErr", "To date must be after from date."); ok = false; }
+            }
+            if (!reason) { err("reasonErr", "Reason/purpose required."); ok = false; }
+            if (!doc.files || !doc.files.length) { err("docErr", "Document required (permission letter)."); ok = false; }
+            if (countUsed(currentSem()) >= MAX) { err("fromErr", "Duty leave quota exceeded (10/semester)."); ok = false; }
+            return ok;
+        }
+
+        function resetForm() {
+            ["fromDate", "toDate", "reason", "authority", "notes"].forEach(id => document.getElementById(id).value = "");
+            document.getElementById("doc").value = "";
+            document.getElementById("docMeta").textContent = "Accepted: PDF/JPG/PNG – permission letter or invitation";
+            clearErrs(); refreshUI();
+        }
+
+        // Events
+        document.getElementById("doc").addEventListener("change", e => {
+            const f = e.target.files[0];
+            document.getElementById("docMeta").textContent = f ? `Attached: ${f.name} (${Math.round(f.size / 1024)}KB)` : "Accepted: PDF/JPG/PNG";
+        });
+        document.getElementById("fromDate").addEventListener("change", refreshUI);
+        document.querySelectorAll(".rolebar button").forEach(b => b.addEventListener("click", () => { state.cur.role = b.getAttribute("data-role"); save(state); render(); }));
+        document.getElementById("resetBtn").addEventListener("click", resetForm);
+        document.getElementById("clearBtn").addEventListener("click", () => { if (!confirm("Clear duty leave history?")) return; localStorage.removeItem(KEY); location.reload(); });
+
+        document.getElementById("submitBtn").addEventListener("click", async () => {
+            if (state.cur.role !== "student") return;
+            if (!validate()) return;
+            const btn = document.getElementById("submitBtn");
+            btn.disabled = true; document.getElementById("spin").style.display = "inline-block";
+            await new Promise(r => setTimeout(r, 500));
+
+            const sk = currentSem();
+            const f = document.getElementById("doc").files[0];
+            const from = document.getElementById("fromDate").value;
+            const to = dutyType === "day" ? document.getElementById("toDate").value : from;
+
+            const rec = { id: "DL-" + Math.random().toString(16).slice(2, 10).toUpperCase(), type: "duty", subType: dutyType, semKey: sk, from, to, reason: document.getElementById("reason").value.trim(), authority: document.getElementById("authority").value.trim(), notes: document.getElementById("notes").value.trim(), document: { name: f.name, size: f.size }, createdAt: new Date().toISOString(), status: "pending_hod" };
+            state.reqs.push(rec);
+            state.cur.status = "pending_hod";
+            save(state);
+
+            // Save to Supabase
+            if (currentUserId) {
+                await db.from("leaves").insert({ student_id: currentUserId, type: "duty", start_date: from, end_date: to, status: "pending" }).catch(() => { });
+            }
+
+            btn.disabled = false; document.getElementById("spin").style.display = "none";
+            render();
+            alert("Duty leave submitted to HOD for approval.");
+        });
+
+        // Load user
+        async function init() {
+            const { data: { session } } = await db.auth.getSession();
+            if (session) {
+                currentUserId = session.user.id;
+                const { data: p } = await db.from("profiles").select("full_name").eq("id", currentUserId).single();
+                if (p) document.getElementById("userName").textContent = p.full_name || "Student";
+            }
+            render();
+        }
+        init();
+    </script>
+</body>
+
+</html>

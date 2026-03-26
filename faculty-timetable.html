@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Faculty Timetable – WizUP</title>
+    <meta name="description" content="Faculty weekly timetable and class schedule" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Inter", system-ui, sans-serif;
+            background: url("assets/images/bg1.jpg") center/cover no-repeat fixed;
+            color: #e2e8f0
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 60% 40%, rgba(0, 0, 0, .2), rgba(0, 0, 0, .82));
+            pointer-events: none
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 11px 20px;
+            background: rgba(0, 0, 0, .85);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(89, 130, 97, .2)
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .logo img {
+            width: 80%;
+            display: block
+        }
+
+        .t-title h1 {
+            margin: 0;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: #fff
+        }
+
+        .t-title p {
+            margin: 0;
+            font-size: 11px;
+            color: rgba(226, 232, 240, .6)
+        }
+
+        .spacer {
+            flex: 1
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(86, 211, 100, .9);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700
+        }
+
+        /* Container */
+        .container {
+            width: min(1200px, 96vw);
+            margin: 22px auto 48px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px
+        }
+
+        /* Week header */
+        .week-hdr {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(10, 20, 12, .65);
+            border: 1px solid rgba(89, 130, 97, .25);
+            backdrop-filter: blur(16px);
+            border-radius: 14px;
+            padding: 16px 22px
+        }
+
+        .week-hdr h2 {
+            font-size: 18px;
+            font-weight: 800;
+            color: #fff
+        }
+
+        .week-hdr p {
+            margin: 5px 0 0;
+            font-size: 12px;
+            color: rgba(148, 163, 184, .75)
+        }
+
+        .week-stats {
+            display: flex;
+            gap: 14px
+        }
+
+        .w-stat {
+            text-align: center;
+            padding: 10px 20px;
+            background: rgba(58, 90, 64, .2);
+            border-radius: 10px;
+            border: 1px solid rgba(89, 130, 97, .25)
+        }
+
+        .w-stat .sv {
+            font-size: 22px;
+            font-weight: 800;
+            color: #86efac
+        }
+
+        .w-stat .sl {
+            font-size: 10px;
+            color: rgba(148, 163, 184, .7);
+            text-transform: uppercase
+        }
+
+        /* Timetable grid */
+        .tt-grid {
+            background: rgba(10, 20, 12, .65);
+            border: 1px solid rgba(89, 130, 97, .25);
+            backdrop-filter: blur(16px);
+            border-radius: 14px;
+            overflow: hidden
+        }
+
+        .tt-header {
+            display: grid;
+            grid-template-columns: 110px repeat(5, 1fr);
+            background: rgba(2, 8, 2, .4);
+            border-bottom: 1px solid rgba(89, 130, 97, .2)
+        }
+
+        .tt-header div {
+            padding: 12px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            color: #86efac
+        }
+
+        .tt-header .time-col {
+            color: rgba(148, 163, 184, .7)
+        }
+
+        .tt-row {
+            display: grid;
+            grid-template-columns: 110px repeat(5, 1fr);
+            border-bottom: 1px solid rgba(89, 130, 97, .1)
+        }
+
+        .tt-row:last-child {
+            border-bottom: none
+        }
+
+        .time-cell {
+            padding: 16px 12px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(148, 163, 184, .75);
+            border-right: 1px solid rgba(89, 130, 97, .15);
+            background: rgba(2, 8, 2, .15);
+            letter-spacing: .3px
+        }
+
+        .class-cell {
+            padding: 10px;
+            position: relative;
+            min-height: 64px;
+            display: flex;
+            align-items: stretch
+        }
+
+        .class-cell.today-col {
+            background: rgba(58, 90, 64, .08)
+        }
+
+        .class-block {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            border: 1px solid transparent
+        }
+
+        .class-block.has-class {
+            background: rgba(58, 90, 64, .3);
+            border-color: rgba(89, 130, 97, .4);
+            cursor: pointer;
+            transition: .15s
+        }
+
+        .class-block.has-class:hover {
+            background: rgba(58, 90, 64, .45);
+            transform: scale(1.02)
+        }
+
+        .cb-subject {
+            font-size: 12px;
+            font-weight: 700;
+            color: #e2e8f0
+        }
+
+        .cb-room {
+            font-size: 10px;
+            color: rgba(148, 163, 184, .75)
+        }
+
+        .cb-btn {
+            font-size: 10px;
+            font-weight: 700;
+            color: #86efac;
+            text-decoration: none;
+            margin-top: 3px
+        }
+
+        /* Subjects summary */
+        .subjects-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 12px
+        }
+
+        .sub-card {
+            background: rgba(10, 20, 12, .65);
+            border: 1px solid rgba(89, 130, 97, .25);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 16px
+        }
+
+        .sc-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 6px
+        }
+
+        .sc-meta {
+            font-size: 11px;
+            color: rgba(148, 163, 184, .7)
+        }
+
+        .sc-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-size: 10px;
+            font-weight: 700;
+            background: rgba(58, 90, 64, .3);
+            color: #86efac;
+            border: 1px solid rgba(89, 130, 97, .35);
+            margin-top: 6px
+        }
+
+        .empty {
+            text-align: center;
+            padding: 32px;
+            color: rgba(148, 163, 184, .6);
+            font-size: 13px
+        }
+
+        @media(max-width:860px) {
+
+            .tt-header,
+            .tt-row {
+                grid-template-columns: 80px repeat(5, 1fr)
+            }
+
+            .week-stats {
+                display: none
+            }
+        }
+
+        @media(max-width:640px) {
+
+            .tt-header,
+            .tt-row {
+                grid-template-columns: 70px repeat(5, 1fr)
+            }
+
+            .class-block.has-class {
+                padding: 6px 8px
+            }
+
+            .cb-room {
+                display: none
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay"></div>
+    <div class="topbar">
+        <div class="logo"><img src="assets/images/LOGO1.png" alt="WizUP" /></div>
+        <div class="t-title">
+            <h1>My Timetable</h1>
+            <p>Weekly class schedule</p>
+        </div>
+        <div class="spacer"></div>
+        <a href="faculty-dashboard.html" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+    </div>
+
+    <div class="container">
+        <div class="week-hdr">
+            <div>
+                <h2 id="facultyName">Faculty Timetable</h2>
+                <p id="weekLabel">Loading timetable…</p>
+            </div>
+            <div class="week-stats">
+                <div class="w-stat">
+                    <div class="sv" id="wk-classes">0</div>
+                    <div class="sl">Classes/Week</div>
+                </div>
+                <div class="w-stat">
+                    <div class="sv" id="wk-subjects">0</div>
+                    <div class="sl">Subjects</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timetable grid -->
+        <div class="tt-grid">
+            <div class="tt-header">
+                <div class="time-col">Time</div>
+                <div id="hdr-mon">Mon</div>
+                <div id="hdr-tue">Tue</div>
+                <div id="hdr-wed">Wed</div>
+                <div id="hdr-thu">Thu</div>
+                <div id="hdr-fri">Fri</div>
+            </div>
+            <div id="ttBody"></div>
+        </div>
+
+        <!-- Subjects overview -->
+        <div>
+            <div
+                style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:rgba(148,163,184,.8);margin-bottom:10px">
+                My Subjects</div>
+            <div class="subjects-summary" id="subjectCards">
+                <div class="empty">Loading subjects…</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://vqxhbfbpqwpdbmgtdcik.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeGhiZmJwcXdwZGJtZ3RkY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTY1MTMsImV4cCI6MjA4NzM5MjUxM30.U9wuwWRDsUqKef93fl0C1DLu9l_hQ5zKMT9KhOt24xE";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+        const SLOTS = ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00"];
+        const DAY_IDX = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const todayName = DAY_IDX[new Date().getDay()];
+
+        // Static timetable fallback
+        const STATIC_TT = [
+            { day: "Monday", start_time: "09:00", end_time: "10:00", room: "Lab 3", subjects: { subject_name: "Java Programming", subject_code: "CS401" } },
+            { day: "Monday", start_time: "11:00", end_time: "12:00", room: "Room 201", subjects: { subject_name: "Software Engineering", subject_code: "CS403" } },
+            { day: "Tuesday", start_time: "09:00", end_time: "10:00", room: "Room 301", subjects: { subject_name: "Deep Learning", subject_code: "CS405" } },
+            { day: "Tuesday", start_time: "14:00", end_time: "15:00", room: "Lab 2", subjects: { subject_name: "Java Programming", subject_code: "CS401" } },
+            { day: "Wednesday", start_time: "10:00", end_time: "11:00", room: "Lab 2", subjects: { subject_name: "Deep Learning", subject_code: "CS405" } },
+            { day: "Wednesday", start_time: "11:00", end_time: "12:00", room: "Room 201", subjects: { subject_name: "Software Engineering", subject_code: "CS403" } },
+            { day: "Thursday", start_time: "09:00", end_time: "10:00", room: "Room 301", subjects: { subject_name: "Software Engineering", subject_code: "CS403" } },
+            { day: "Friday", start_time: "09:00", end_time: "10:00", room: "Lab 3", subjects: { subject_name: "Java Programming", subject_code: "CS401" } },
+            { day: "Friday", start_time: "11:00", end_time: "12:00", room: "Room 301", subjects: { subject_name: "Deep Learning", subject_code: "CS405" } },
+        ];
+
+        function renderTT(slots) {
+            const tbody = document.getElementById("ttBody");
+
+            // Highlight today's column header
+            DAYS.forEach((d, i) => {
+                if (d === todayName) { document.getElementById("hdr-" + ["mon", "tue", "wed", "thu", "fri"][i]).style.color = "#ffc559"; }
+            });
+
+            // Build lookup: day x slot → slot entry
+            const lookup = {};
+            slots.forEach(s => {
+                const key = `${s.day}|${s.start_time}`;
+                lookup[key] = s;
+            });
+
+            // Total class count
+            document.getElementById("wk-classes").textContent = slots.length;
+            const subjectSet = new Set(slots.map(s => s.subjects?.subject_name));
+            document.getElementById("wk-subjects").textContent = subjectSet.size;
+
+            // Render the week
+            const html = SLOTS.map(slot => `<div class="tt-row">
+    <div class="time-cell">${slot}<br/><span style="font-size:9px;opacity:.6">– ${(parseInt(slot) + 1).toString().padStart(2, "0")}:00</span></div>
+    ${DAYS.map(day => {
+                const todayCls = day === todayName ? "today-col" : "";
+                const entry = lookup[`${day}|${slot}`];
+                if (entry) {
+                    const sn = entry.subjects?.subject_name || "Subject";
+                    return `<div class="class-cell ${todayCls}">
+          <div class="class-block has-class">
+            <div class="cb-subject">${sn}</div>
+            <div class="cb-room"><i class="fa-solid fa-location-dot"></i> ${entry.room || "—"}</div>
+            <a href="faculty-attendance.html" class="cb-btn">Mark Att. →</a>
+          </div>
+        </div>`;
+                }
+                return `<div class="class-cell ${todayCls}"><div class="class-block"></div></div>`;
+            }).join("")}
+  </div>`).join("");
+
+            tbody.innerHTML = html;
+
+            // Render subject cards
+            const cardsEl = document.getElementById("subjectCards");
+            const uniqueSubjects = [...new Map(slots.map(s => [s.subjects?.subject_name, s])).values()];
+            if (!uniqueSubjects.length) { cardsEl.innerHTML = `<div class="empty">No subjects assigned</div>`; return; }
+            cardsEl.innerHTML = uniqueSubjects.map(s => {
+                const name = s.subjects?.subject_name || "Subject";
+                const code = s.subjects?.subject_code || "—";
+                const cnt = slots.filter(sl => sl.subjects?.subject_name === name).length;
+                return `<div class="sub-card">
+      <div class="sc-name">${name}</div>
+      <div class="sc-meta">Code: ${code}</div>
+      <div class="sc-badge">${cnt} classes/week</div>
+    </div>`;
+            }).join("");
+        }
+
+        async function initPage() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) { window.location.href = "faculty-signin.html"; return; }
+
+            const { data: profile } = await db.from("profiles").select("*").eq("id", session.user.id).single();
+            if (profile) {
+                document.getElementById("facultyName").textContent = profile.full_name || "Faculty Timetable";
+                document.getElementById("weekLabel").textContent = `${profile.department || "CSE"} Department • Week of ${new Date().toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })}`;
+            }
+
+            // Load subjects for this faculty
+            const { data: subs } = await db.from("subjects").select("*").eq("faculty_id", session.user.id);
+
+            if (subs && subs.length) {
+                const subIds = subs.map(s => s.id);
+                const { data: tt } = await db.from("timetable").select("*,subjects(subject_name,subject_code)").in("subject_id", subIds).order("start_time");
+                renderTT(tt && tt.length ? tt : STATIC_TT);
+            } else {
+                renderTT(STATIC_TT);
+            }
+        }
+
+        initPage().catch(() => renderTT(STATIC_TT));
+    </script>
+</body>
+
+</html>

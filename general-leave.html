@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>General Leave - WizUP</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    :root{
+      --glass: rgba(15,23,42,.55);
+      --border: rgba(148,163,184,.35);
+      --text: #e5e7eb;
+      --muted: rgba(226,232,240,.75);
+      --accent: #38bdf8;
+      --warn: #f59e0b;
+      --danger: #fb7185;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: url("assets/images/bg1.jpg") center/cover no-repeat fixed;
+      color: var(--text);
+    }
+    .overlay{position:fixed;inset:0;background:radial-gradient(circle at 70% 40%,rgba(0,0,0,.15),rgba(0,0,0,.78));pointer-events:none}
+    .topbar{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(0,0,0,.75);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.08)}
+    .logo{width:56px;height:56px;border-radius:12px;background:#000;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(0,0,0,.45);overflow:hidden}
+    .logo img{width:80%;height:auto;display:block}
+    .title{display:flex;flex-direction:column;gap:2px}
+    .title h1{margin:0;font-size:16px;letter-spacing:.6px;text-transform:uppercase}
+    .title p{margin:0;font-size:12px;color:var(--muted)}
+    .spacer{flex:1}
+    .chip{display:inline-flex;align-items:center;gap:10px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:var(--muted);font-size:12px}
+    .chip img{width:26px;height:26px;border-radius:50%;border:2px solid #ffc559;object-fit:cover}
+    .container{width:min(1100px,94vw);margin:22px auto 40px;display:grid;grid-template-columns:1.1fr .9fr;gap:16px;position:relative;z-index:1}
+    .card{border:1px solid var(--border);background:var(--glass);backdrop-filter:blur(18px);border-radius:18px;box-shadow:0 18px 45px rgba(0,0,0,.35);overflow:hidden}
+    .card header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(2,6,23,.35)}
+    .card header h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.8px}
+    .card header .badge{font-size:11px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:var(--muted)}
+    .content{padding:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{display:block;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:rgba(226,232,240,.85);margin-bottom:6px}
+    input,textarea,select{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(148,163,184,.35);background:rgba(2,6,23,.45);color:var(--text);outline:none}
+    input:focus,textarea:focus,select:focus{border-color:rgba(56,189,248,.6);box-shadow:0 0 0 3px rgba(56,189,248,.18)}
+    textarea{min-height:92px;resize:vertical}
+    .help{margin-top:6px;font-size:12px;color:rgba(226,232,240,.7)}
+    .error{margin-top:6px;font-size:12px;color:var(--danger)}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+    .btn{appearance:none;border:none;cursor:pointer;padding:10px 14px;border-radius:14px;font-weight:700;letter-spacing:.4px;color:#06121f;background:linear-gradient(90deg,#38bdf8,#a78bfa);box-shadow:0 14px 28px rgba(56,189,248,.20);display:inline-flex;align-items:center;gap:10px}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    .btn.secondary{color:var(--text);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);box-shadow:none}
+    .btn.danger{color:#fff;background:rgba(251,113,133,.18);border:1px solid rgba(251,113,133,.35)}
+    .btn.small{padding:8px 10px;border-radius:12px;font-size:12px}
+    .spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(2,6,23,.35);border-top-color:rgba(2,6,23,.9);animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .stepper{display:grid;grid-template-columns:1fr;gap:10px}
+    .step{border:1px solid rgba(148,163,184,.28);background:rgba(2,6,23,.30);border-radius:14px;padding:12px;display:flex;gap:12px;align-items:flex-start}
+    .dot{width:12px;height:12px;border-radius:50%;margin-top:4px;background:rgba(148,163,184,.45);flex:0 0 auto}
+    .step.done .dot{background:rgba(34,197,94,.95)}
+    .step.active .dot{background:rgba(245,158,11,.95)}
+    .step.rejected .dot{background:rgba(251,113,133,.95)}
+    .step h3{margin:0;font-size:12px;letter-spacing:.5px;text-transform:uppercase}
+    .step p{margin:4px 0 0;font-size:12px;color:rgba(226,232,240,.75);line-height:1.4}
+    .mini{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .pill{font-size:11px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(226,232,240,.8)}
+    .pill.good{border-color:rgba(34,197,94,.45);color:rgba(167,243,208,.95)}
+    .pill.bad{border-color:rgba(251,113,133,.45);color:rgba(254,205,211,.95)}
+    .pill.warn{border-color:rgba(245,158,11,.45);color:rgba(253,230,138,.95)}
+    .rolebar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .rolebar button{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(226,232,240,.85);cursor:pointer;font-size:12px;font-weight:700}
+    .rolebar button.active{border-color:rgba(56,189,248,.6);box-shadow:0 0 0 3px rgba(56,189,248,.12)}
+    .link{color:rgba(56,189,248,.95);text-decoration:none;font-weight:700;font-size:12px}
+    .link:hover{text-decoration:underline}
+    @media (max-width: 920px){.container{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="overlay"></div>
+  <div class="topbar">
+    <div class="logo" title="WizUP">
+      <img src="assets/images/LOGO1.png" alt="WizUP" />
+    </div>
+    <div class="title">
+      <h1>General Leave</h1>
+      <p>Submit a general leave request (min 1 day, max 10 requests/semester).</p>
+    </div>
+    <div class="spacer"></div>
+    <a class="link" href="student-dashboard.html"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+    <div class="chip">
+      <img src="assets/images/man.png" alt="Profile" />
+      <span>Student</span>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="card">
+      <header>
+        <h2>Leave Application</h2>
+        <span class="badge" id="semBadge">Semester: —</span>
+      </header>
+      <div class="content">
+        <div class="grid">
+          <div>
+            <label for="fromDate">From date</label>
+            <input id="fromDate" type="date" />
+            <div class="error" id="fromErr" style="display:none"></div>
+          </div>
+          <div>
+            <label for="toDate">To date</label>
+            <input id="toDate" type="date" />
+            <div class="error" id="toErr" style="display:none"></div>
+          </div>
+          <div>
+            <label for="reason">Reason</label>
+            <input id="reason" type="text" placeholder="e.g. Family function, personal work" />
+            <div class="error" id="reasonErr" style="display:none"></div>
+          </div>
+          <div>
+            <label for="urgent">Priority</label>
+            <select id="urgent">
+              <option value="normal">Normal</option>
+              <option value="urgent">Urgent</option>
+            </select>
+            <div class="help">Urgent requests should include a valid reason.</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label for="doc">Upload supporting document (optional)</label>
+          <input id="doc" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+          <div class="help" id="docMeta">Optional: PDF/JPG/PNG.</div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label for="notes">Additional notes (optional)</label>
+          <textarea id="notes" placeholder="Any details to help the approver"></textarea>
+        </div>
+
+        <div class="row">
+          <button class="btn" id="submitBtn">
+            <span id="submitSpinner" class="spinner" style="display:none"></span>
+            Submit to HOD/Dean
+          </button>
+          <button class="btn secondary" id="resetBtn" type="button">Reset</button>
+          <button class="btn danger small" id="clearHistoryBtn" type="button">Clear History</button>
+        </div>
+
+        <div class="mini">
+          <span class="pill" id="minDaysPill">Min days: 1</span>
+          <span class="pill" id="quotaPill">Quota: 10 / semester</span>
+          <span class="pill warn" id="usedPill">Used: 0</span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card">
+      <header>
+        <h2>Approval Workflow</h2>
+        <span class="badge" id="statusBadge">Status: Draft</span>
+      </header>
+      <div class="content">
+        <div class="stepper">
+          <div class="step active" data-step="draft">
+            <div class="dot"></div>
+            <div><h3>Student Draft</h3><p>Fill dates and submit to HOD/Dean.</p></div>
+          </div>
+          <div class="step" data-step="hod">
+            <div class="dot"></div>
+            <div><h3>HOD / Dean Review</h3><p>Approves or rejects. If approved, forwards to e-Governance.</p></div>
+          </div>
+          <div class="step" data-step="egov">
+            <div class="dot"></div>
+            <div><h3>e-Governance Approval</h3><p>Final approval and recording.</p></div>
+          </div>
+          <div class="step" data-step="done">
+            <div class="dot"></div>
+            <div><h3>Completed</h3><p>Request fully processed.</p></div>
+          </div>
+        </div>
+
+        <div class="rolebar">
+          <button type="button" class="active" data-role="student">Student View</button>
+          <button type="button" data-role="hod">HOD/Dean View</button>
+          <button type="button" data-role="egov">e-Governance View</button>
+        </div>
+        <div class="row" id="actionsRow" style="margin-top:12px"></div>
+
+        <div style="margin-top:12px;font-size:12px;color:rgba(226,232,240,.75);line-height:1.5">
+          <strong>Note:</strong> Demo flow stored in your browser (localStorage).
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const KEY = "wizup.generalLeave.v1";
+    const MAX_REQUESTS_PER_SEM = 10;
+    const MIN_DAYS = 1;
+
+    function semKeyFromDate(d){
+      const dt = new Date(d);
+      if (isNaN(dt)) return "unknown";
+      const y = dt.getFullYear();
+      const sem = (dt.getMonth() <= 5) ? "S1" : "S2";
+      return `${y}-${sem}`;
+    }
+    function daysBetweenInclusive(from, to){
+      const a = new Date(from), b = new Date(to);
+      if (isNaN(a) || isNaN(b)) return 0;
+      const ms = 24*60*60*1000;
+      const start = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+      const end = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+      return Math.floor((end-start)/ms)+1;
+    }
+    function loadState(){ try{ return JSON.parse(localStorage.getItem(KEY)||"{}"); }catch{ return {}; } }
+    function saveState(s){ localStorage.setItem(KEY, JSON.stringify(s)); }
+    function uid(){ return "GL-" + Math.random().toString(16).slice(2,10).toUpperCase(); }
+
+    const fromDate = document.getElementById("fromDate");
+    const toDate = document.getElementById("toDate");
+    const reason = document.getElementById("reason");
+    const urgent = document.getElementById("urgent");
+    const doc = document.getElementById("doc");
+    const notes = document.getElementById("notes");
+
+    const submitBtn = document.getElementById("submitBtn");
+    const submitSpinner = document.getElementById("submitSpinner");
+    const resetBtn = document.getElementById("resetBtn");
+    const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+    const docMeta = document.getElementById("docMeta");
+
+    const fromErr = document.getElementById("fromErr");
+    const toErr = document.getElementById("toErr");
+    const reasonErr = document.getElementById("reasonErr");
+
+    const semBadge = document.getElementById("semBadge");
+    const usedPill = document.getElementById("usedPill");
+    const statusBadge = document.getElementById("statusBadge");
+    const actionsRow = document.getElementById("actionsRow");
+
+    const roleButtons = Array.from(document.querySelectorAll(".rolebar button"));
+    const steps = Array.from(document.querySelectorAll(".stepper .step"));
+
+    const state = loadState();
+    if (!state.requests) state.requests = [];
+    if (!state.current) state.current = { status: "draft", role: "student" };
+
+    function countUsed(semKey){ return state.requests.filter(r=>r.semKey===semKey).length; }
+    function currentSem(){ return semKeyFromDate(fromDate.value || new Date().toISOString().slice(0,10)); }
+    function refreshSemUI(){
+      const sem = currentSem();
+      semBadge.textContent = "Semester: " + sem;
+      const used = countUsed(sem);
+      usedPill.textContent = "Used: " + used;
+      usedPill.className = "pill " + (used >= MAX_REQUESTS_PER_SEM ? "bad" : used >= MAX_REQUESTS_PER_SEM-2 ? "warn" : "good");
+    }
+
+    function setError(el,msg){ if(!msg){el.style.display="none";el.textContent="";return;} el.style.display="block";el.textContent=msg; }
+
+    function validate(){
+      let ok=true;
+      setError(fromErr,""); setError(toErr,""); setError(reasonErr,"");
+      if(!fromDate.value){ setError(fromErr,"From date is required."); ok=false; }
+      if(!toDate.value){ setError(toErr,"To date is required."); ok=false; }
+      if(fromDate.value && toDate.value){
+        const days = daysBetweenInclusive(fromDate.value, toDate.value);
+        if(days<=0){ setError(toErr,"To date must be after From date."); ok=false; }
+        else if(days<MIN_DAYS){ setError(toErr,"General leave must be minimum 1 day."); ok=false; }
+      }
+      if(!reason.value.trim()){ setError(reasonErr,"Reason is required."); ok=false; }
+      if(urgent.value==="urgent" && reason.value.trim().length<8){
+        setError(reasonErr,"Urgent requests must include a valid reason (min 8 chars).");
+        ok=false;
+      }
+      const used = countUsed(currentSem());
+      if(used>=MAX_REQUESTS_PER_SEM){
+        setError(toErr,"Leave quota exceeded. Allowed " + MAX_REQUESTS_PER_SEM + " requests per semester.");
+        ok=false;
+      }
+      return ok;
+    }
+
+    function badgeForStatus(s){
+      if(s==="draft") return "Draft";
+      if(s==="pending_hod") return "Pending HOD/Dean";
+      if(s==="pending_egov") return "Pending e-Governance";
+      if(s==="approved_egov") return "Approved";
+      if(s==="rejected_hod") return "Rejected by HOD/Dean";
+      if(s==="rejected_egov") return "Rejected by e-Governance";
+      return s;
+    }
+    function stepState(){
+      const s = state.current.status;
+      if(s==="draft") return {draft:"active"};
+      if(s==="pending_hod") return {draft:"done", hod:"active"};
+      if(s==="pending_egov") return {draft:"done", hod:"done", egov:"active"};
+      if(s==="approved_egov") return {draft:"done", hod:"done", egov:"done", done:"done"};
+      if(s==="rejected_hod") return {draft:"done", hod:"rejected"};
+      if(s==="rejected_egov") return {draft:"done", hod:"done", egov:"rejected"};
+      return {};
+    }
+
+    function renderActions(){
+      actionsRow.innerHTML="";
+      const role=state.current.role, status=state.current.status;
+      const mk=(label,cls,onClick)=>{
+        const b=document.createElement("button");
+        b.type="button";
+        b.className="btn small "+(cls||"");
+        b.textContent=label;
+        b.addEventListener("click",onClick);
+        return b;
+      };
+      if(role==="student"){
+        if(status==="draft") actionsRow.appendChild(mk("Submit","",()=>submitBtn.click()));
+        else actionsRow.appendChild(mk("New Draft","secondary",()=>{resetForm(); setStatus("draft");}));
+      }
+      if(role==="hod"){
+        if(status==="pending_hod"){
+          actionsRow.appendChild(mk("Approve & Forward","",()=>setStatus("pending_egov")));
+          actionsRow.appendChild(mk("Reject","danger",()=>setStatus("rejected_hod")));
+        } else {
+          const b=mk("No actions","secondary",()=>{}); b.disabled=true; actionsRow.appendChild(b);
+        }
+      }
+      if(role==="egov"){
+        if(status==="pending_egov"){
+          actionsRow.appendChild(mk("Approve","",()=>setStatus("approved_egov")));
+          actionsRow.appendChild(mk("Reject","danger",()=>setStatus("rejected_egov")));
+        } else {
+          const b=mk("No actions","secondary",()=>{}); b.disabled=true; actionsRow.appendChild(b);
+        }
+      }
+    }
+
+    function setStatus(s){
+      state.current.status=s;
+      const last=state.requests[state.requests.length-1];
+      if(last) last.status=s;
+      saveState(state);
+      render();
+    }
+
+    function render(){
+      refreshSemUI();
+      statusBadge.textContent="Status: "+badgeForStatus(state.current.status);
+      const map=stepState();
+      steps.forEach(step=>{
+        step.classList.remove("done","active","rejected");
+        const k=step.getAttribute("data-step");
+        if(map[k]) step.classList.add(map[k]);
+      });
+      roleButtons.forEach(b=>b.classList.toggle("active", b.getAttribute("data-role")===state.current.role));
+      renderActions();
+    }
+
+    function resetForm(){
+      fromDate.value=""; toDate.value=""; reason.value=""; urgent.value="normal";
+      notes.value=""; doc.value=""; docMeta.textContent="Optional: PDF/JPG/PNG.";
+      setError(fromErr,""); setError(toErr,""); setError(reasonErr,"");
+      refreshSemUI();
+    }
+
+    doc.addEventListener("change",()=>{
+      if(doc.files && doc.files[0]){
+        const f=doc.files[0];
+        docMeta.textContent=`Attached: ${f.name} (${Math.round(f.size/1024)} KB)`;
+      } else docMeta.textContent="Optional: PDF/JPG/PNG.";
+    });
+    fromDate.addEventListener("change", refreshSemUI);
+    roleButtons.forEach(b=>b.addEventListener("click",()=>{state.current.role=b.getAttribute("data-role"); saveState(state); render();}));
+    resetBtn.addEventListener("click", resetForm);
+    clearHistoryBtn.addEventListener("click",()=>{ if(!confirm("Clear all General Leave requests stored in this browser?")) return; localStorage.removeItem(KEY); location.reload(); });
+
+    submitBtn.addEventListener("click", async ()=>{
+      if(state.current.role!=="student") return;
+      if(!validate()) return;
+      submitBtn.disabled=true; submitSpinner.style.display="inline-block";
+      await new Promise(r=>setTimeout(r,500));
+      const sem=currentSem();
+      const f=doc.files && doc.files[0];
+      state.requests.push({
+        id: uid(),
+        type:"general",
+        semKey: sem,
+        from: fromDate.value,
+        to: toDate.value,
+        days: daysBetweenInclusive(fromDate.value,toDate.value),
+        priority: urgent.value,
+        reason: reason.value.trim(),
+        document: f ? { name:f.name, size:f.size, type:f.type } : null,
+        notes: notes.value.trim(),
+        createdAt: new Date().toISOString(),
+        status: "pending_hod",
+      });
+      state.current.status="pending_hod";
+      saveState(state);
+      submitBtn.disabled=false; submitSpinner.style.display="none";
+      render();
+      alert("Submitted to HOD/Dean for approval.");
+    });
+
+    render();
+  </script>
+</body>
+</html>
+

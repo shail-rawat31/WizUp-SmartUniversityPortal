@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Mark Attendance – WizUP Faculty</title>
+    <meta name="description" content="Faculty attendance marking portal – WizUP" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Inter", system-ui, sans-serif;
+            background: url("assets/images/bg1.jpg") center/cover no-repeat fixed;
+            color: #e2e8f0
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 60% 40%, rgba(0, 0, 0, .2), rgba(0, 0, 0, .82));
+            pointer-events: none
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 11px 20px;
+            background: rgba(0, 0, 0, .85);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(89, 130, 97, .2)
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .logo img {
+            width: 80%;
+            display: block
+        }
+
+        .t-title h1 {
+            margin: 0;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: #fff
+        }
+
+        .t-title p {
+            margin: 0;
+            font-size: 11px;
+            color: rgba(226, 232, 240, .6)
+        }
+
+        .spacer {
+            flex: 1
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(86, 211, 100, .9);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700
+        }
+
+        .nav-link:hover {
+            opacity: .8
+        }
+
+        .btn-sm {
+            padding: 7px 14px;
+            border-radius: 10px;
+            border: none;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .btn-green {
+            background: linear-gradient(90deg, #3A5A40, #598261);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(58, 90, 64, .35)
+        }
+
+        .btn-green:hover {
+            opacity: .88
+        }
+
+        .btn-green:disabled {
+            opacity: .6;
+            cursor: not-allowed
+        }
+
+        /* Container */
+        .container {
+            width: min(1100px, 96vw);
+            margin: 22px auto 48px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 16px;
+            position: relative;
+            z-index: 1
+        }
+
+        /* Card */
+        .card {
+            border: 1px solid rgba(89, 130, 97, .25);
+            background: rgba(10, 20, 12, .65);
+            backdrop-filter: blur(18px);
+            border-radius: 16px;
+            overflow: hidden
+        }
+
+        .card-hd {
+            padding: 13px 18px;
+            border-bottom: 1px solid rgba(89, 130, 97, .2);
+            background: rgba(2, 8, 2, .35);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .card-hd h2 {
+            margin: 0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            color: #e2e8f0
+        }
+
+        .card-bd {
+            padding: 16px
+        }
+
+        /* Session selector */
+        label {
+            display: block;
+            font-size: 11px;
+            letter-spacing: .6px;
+            text-transform: uppercase;
+            color: rgba(148, 163, 184, .85);
+            margin-bottom: 6px
+        }
+
+        select,
+        input[type=date] {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(89, 130, 97, .3);
+            background: rgba(2, 8, 2, .5);
+            color: #e2e8f0;
+            font-size: 13px;
+            outline: none;
+            margin-bottom: 14px;
+            font-family: inherit
+        }
+
+        select:focus,
+        input:focus {
+            border-color: #598261;
+            box-shadow: 0 0 0 3px rgba(89, 130, 97, .2)
+        }
+
+        .session-info {
+            padding: 12px;
+            background: rgba(58, 90, 64, .15);
+            border: 1px solid rgba(89, 130, 97, .25);
+            border-radius: 10px;
+            font-size: 12px;
+            margin-bottom: 14px
+        }
+
+        .session-info p {
+            color: rgba(148, 163, 184, .85);
+            margin: 3px 0
+        }
+
+        .session-info strong {
+            color: #86efac
+        }
+
+        /* Students list */
+        .students-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px
+        }
+
+        .students-header h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: #e2e8f0
+        }
+
+        .batch-btns {
+            display: flex;
+            gap: 6px
+        }
+
+        .batch-btn {
+            padding: 5px 12px;
+            border-radius: 99px;
+            border: 1px solid rgba(255, 255, 255, .15);
+            background: rgba(255, 255, 255, .06);
+            color: rgba(226, 232, 240, .85);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .15s
+        }
+
+        .batch-btn:hover {
+            background: rgba(255, 255, 255, .12)
+        }
+
+        .student-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, .04);
+            transition: .15s
+        }
+
+        .student-row:last-child {
+            border-bottom: none
+        }
+
+        .student-row:hover {
+            background: rgba(255, 255, 255, .03)
+        }
+
+        .s-info {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .s-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(58, 90, 64, .4);
+            border: 1px solid rgba(89, 130, 97, .4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: #86efac;
+            flex-shrink: 0
+        }
+
+        .s-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e2e8f0
+        }
+
+        .s-roll {
+            font-size: 11px;
+            color: rgba(148, 163, 184, .7)
+        }
+
+        .att-toggle {
+            display: flex;
+            gap: 5px
+        }
+
+        .att-btn {
+            padding: 5px 13px;
+            border-radius: 99px;
+            border: none;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .15s
+        }
+
+        .btn-present {
+            background: rgba(34, 197, 94, .12);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, .25)
+        }
+
+        .btn-absent {
+            background: rgba(239, 68, 68, .12);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, .25)
+        }
+
+        .att-btn.active.btn-present {
+            background: #22c55e;
+            color: #0d1117
+        }
+
+        .att-btn.active.btn-absent {
+            background: #ef4444;
+            color: #fff
+        }
+
+        /* Summary bar */
+        .summary-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 16px;
+            background: rgba(58, 90, 64, .1);
+            border-top: 1px solid rgba(89, 130, 97, .2);
+            font-size: 12px
+        }
+
+        .sum-item strong {
+            color: #86efac;
+            font-size: 16px;
+            font-weight: 800
+        }
+
+        .sum-item span {
+            color: rgba(148, 163, 184, .8);
+            font-size: 11px;
+            margin-left: 3px
+        }
+
+        /* Empty state */
+        .empty {
+            text-align: center;
+            padding: 28px;
+            color: rgba(148, 163, 184, .6);
+            font-size: 13px
+        }
+
+        .empty i {
+            font-size: 32px;
+            margin-bottom: 10px;
+            display: block;
+            opacity: .5
+        }
+
+        @media(max-width:860px) {
+            .container {
+                grid-template-columns: 1fr
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay"></div>
+    <div class="topbar">
+        <div class="logo"><img src="assets/images/LOGO1.png" alt="WizUP" /></div>
+        <div class="t-title">
+            <h1>Mark Attendance</h1>
+            <p>Select session and mark student attendance</p>
+        </div>
+        <div class="spacer"></div>
+        <a href="faculty-dashboard.html" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+    </div>
+
+    <div class="container">
+        <!-- Session selector -->
+        <div class="card">
+            <div class="card-hd">
+                <h2>Session Details</h2>
+            </div>
+            <div class="card-bd">
+                <label>Select Subject</label>
+                <select id="subjectSel">
+                    <option value="">— Choose Subject —</option>
+                </select>
+
+                <label>Date</label>
+                <input type="date" id="attDate" />
+
+                <label>Slot / Timing</label>
+                <select id="slotSel">
+                    <option value="09:00">09:00 – 10:00</option>
+                    <option value="10:00">10:00 – 11:00</option>
+                    <option value="11:00">11:00 – 12:00</option>
+                    <option value="12:00">12:00 – 13:00</option>
+                    <option value="14:00">14:00 – 15:00</option>
+                    <option value="15:00">15:00 – 16:00</option>
+                    <option value="16:00">16:00 – 17:00</option>
+                </select>
+
+                <div class="session-info" id="sessionInfo">
+                    <p>Subject: <strong id="si-subject">—</strong></p>
+                    <p>Date: <strong id="si-date">—</strong></p>
+                    <p>Slot: <strong id="si-slot">—</strong></p>
+                    <p>Students: <strong id="si-count">0</strong></p>
+                </div>
+
+                <button class="btn-sm btn-green" id="loadStudentsBtn" style="width:100%;justify-content:center"
+                    onclick="loadStudents()">
+                    <i class="fa-solid fa-users"></i> Load Students
+                </button>
+            </div>
+        </div>
+
+        <!-- Attendance Marking -->
+        <div class="card">
+            <div class="card-hd">
+                <h2><i class="fa-solid fa-clipboard-check" style="color:#86efac;margin-right:6px"></i>Mark Attendance
+                </h2>
+                <button class="btn-sm btn-green" id="submitAttBtn" onclick="submitAttendance()" disabled>
+                    <i class="fa-solid fa-floppy-disk"></i> Save Attendance
+                </button>
+            </div>
+            <div id="studentListArea">
+                <div class="empty"><i class="fa-solid fa-users"></i>Select a subject and click "Load Students"</div>
+            </div>
+            <div class="summary-bar" id="sumBar" style="display:none">
+                <div class="sum-item"><strong id="sum-present">0</strong><span>Present</span></div>
+                <div class="sum-item"><strong id="sum-absent">0</strong><span>Absent</span></div>
+                <div class="sum-item"><strong id="sum-total">0</strong><span>Total</span></div>
+                <div class="sum-item" style="margin-left:auto"><strong id="sum-pct">0%</strong><span>Attendance</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://vqxhbfbpqwpdbmgtdcik.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeGhiZmJwcXdwZGJtZ3RkY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTY1MTMsImV4cCI6MjA4NzM5MjUxM30.U9wuwWRDsUqKef93fl0C1DLu9l_hQ5zKMT9KhOt24xE";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentFaculty = null;
+        let studentAttMap = {}; // student_id -> "present"|"absent"
+        let allStudents = [];
+        let currentSubjectId = null;
+
+        // Set today's date
+        document.getElementById("attDate").valueAsDate = new Date();
+
+        // Static students fallback
+        const STATIC_STUDENTS = Array.from({ length: 40 }, (_, i) => ({
+            id: `static-${i + 1}`,
+            full_name: `Student ${i + 1}`,
+            roll_no: `R${i + 1}`,
+            email: `student${i + 1}@wizup.edu`
+        }));
+
+        function toast(msg, type = "success") {
+            const t = document.createElement("div");
+            t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;background:${type === "success" ? "#22c55e" : "#ef4444"};box-shadow:0 8px 24px rgba(0,0,0,.4)`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        // Load subjects for this faculty
+        async function loadSubjects() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) { window.location.href = "faculty-signin.html"; return; }
+            currentFaculty = session.user;
+
+            const { data: subjects } = await db.from("subjects").select("*").eq("faculty_id", currentFaculty.id);
+            const sel = document.getElementById("subjectSel");
+
+            if (subjects && subjects.length) {
+                subjects.forEach(s => {
+                    const opt = document.createElement("option");
+                    opt.value = s.id;
+                    opt.textContent = `${s.subject_name} (${s.subject_code || s.id.slice(0, 6)})`;
+                    sel.appendChild(opt);
+                });
+            } else {
+                // Fallback subjects
+                ["Java Programming", "Software Engineering", "Deep Learning"].forEach((name, i) => {
+                    const opt = document.createElement("option");
+                    opt.value = "subject-" + i;
+                    opt.textContent = name;
+                    sel.appendChild(opt);
+                });
+            }
+        }
+
+        function updateSessionInfo() {
+            const subSel = document.getElementById("subjectSel");
+            const subName = subSel.options[subSel.selectedIndex]?.text || "—";
+            const date = document.getElementById("attDate").value;
+            const slot = document.getElementById("slotSel").value;
+            document.getElementById("si-subject").textContent = subSel.value ? subName : "—";
+            document.getElementById("si-date").textContent = date || "—";
+            document.getElementById("si-slot").textContent = slot + " – " + (parseInt(slot) + 1).toString().padStart(2, "0") + ":00";
+            document.getElementById("si-count").textContent = allStudents.length;
+        }
+
+        ["subjectSel", "attDate", "slotSel"].forEach(id => document.getElementById(id).addEventListener("change", updateSessionInfo));
+
+        async function loadStudents() {
+            const subId = document.getElementById("subjectSel").value;
+            if (!subId) { toast("Select a subject first", "error"); return; }
+            currentSubjectId = subId;
+
+            const area = document.getElementById("studentListArea");
+            area.innerHTML = `<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i>Loading students…</div>`;
+
+            const { data: students } = await db.from("profiles").select("id,full_name,roll_no,email").eq("role", "student").eq("department", "CSE").order("full_name");
+            allStudents = students && students.length ? students : STATIC_STUDENTS;
+
+            // Pre-load today's attendance if exists
+            const attDate = document.getElementById("attDate").value;
+            const { data: existingAtt } = await db.from("attendance").select("student_id,status").eq("subject_id", subId).eq("date", attDate);
+            if (existingAtt) { existingAtt.forEach(a => { studentAttMap[a.student_id] = a.status; }); }
+
+            renderStudentList();
+            document.getElementById("si-count").textContent = allStudents.length;
+            document.getElementById("sumBar").style.display = "flex";
+            document.getElementById("submitAttBtn").disabled = false;
+            updateSessionInfo();
+        }
+
+        function renderStudentList() {
+            const area = document.getElementById("studentListArea");
+            if (!allStudents.length) { area.innerHTML = `<div class="empty"><i class="fa-solid fa-users-slash"></i>No students found</div>`; return; }
+
+            area.innerHTML = `
+    <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+      <div class="students-header" style="margin-bottom:0"><h3>${allStudents.length} Students</h3></div>
+      <div class="batch-btns">
+        <button class="batch-btn" onclick="markAll('present')">✓ All Present</button>
+        <button class="batch-btn" onclick="markAll('absent')">✗ All Absent</button>
+      </div>
+    </div>
+    <div id="sRows" style="max-height:480px;overflow-y:auto">
+      ${allStudents.map((s, i) => {
+                const cur = studentAttMap[s.id] || "present";
+                return `<div class="student-row">
+          <div class="s-info">
+            <div class="s-avatar">${(s.full_name || "S")[0]}</div>
+            <div>
+              <div class="s-name">${s.full_name || "Student " + (i + 1)}</div>
+              <div class="s-roll">${s.roll_no || "—"} • ${s.email || ""}</div>
+            </div>
+          </div>
+          <div class="att-toggle">
+            <button class="att-btn btn-present ${cur === "present" ? "active" : ""}" data-sid="${s.id}" data-status="present" onclick="setStatus(this,'${s.id}','present')">Present</button>
+            <button class="att-btn btn-absent ${cur === "absent" ? "active" : ""}" data-sid="${s.id}" data-status="absent" onclick="setStatus(this,'${s.id}','absent')">Absent</button>
+          </div>
+        </div>`;
+            }).join("")}
+    </div>`;
+            updateSummary();
+        }
+
+        function setStatus(btn, sid, status) {
+            studentAttMap[sid] = status;
+            const row = btn.closest(".att-toggle");
+            row.querySelectorAll(".att-btn").forEach(b => {
+                b.classList.toggle("active", b.getAttribute("data-status") === status);
+            });
+            updateSummary();
+        }
+
+        function markAll(status) {
+            allStudents.forEach(s => studentAttMap[s.id] = status);
+            document.querySelectorAll(".att-btn").forEach(b => {
+                b.classList.toggle("active", b.getAttribute("data-status") === status);
+            });
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const pres = Object.values(studentAttMap).filter(v => v === "present").length;
+            const abs = Object.values(studentAttMap).filter(v => v === "absent").length;
+            const total = allStudents.length;
+            document.getElementById("sum-present").textContent = pres;
+            document.getElementById("sum-absent").textContent = abs;
+            document.getElementById("sum-total").textContent = total;
+            document.getElementById("sum-pct").textContent = total ? Math.round((pres / total) * 100) + "%" : "—";
+        }
+
+        async function submitAttendance() {
+            if (!currentSubjectId || !allStudents.length) { toast("Load students first", "error"); return; }
+            if (!currentFaculty) { toast("Not authenticated", "error"); return; }
+
+            const btn = document.getElementById("submitAttBtn");
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving…`;
+
+            const attDate = document.getElementById("attDate").value;
+            const records = allStudents.map(s => ({
+                student_id: s.id,
+                subject_id: currentSubjectId,
+                date: attDate,
+                status: studentAttMap[s.id] || "present",
+                marked_by: currentFaculty.id
+            }));
+
+            // Upsert (delete then insert for simplicity)
+            await db.from("attendance").delete().eq("subject_id", currentSubjectId).eq("date", attDate);
+            const { error } = await db.from("attendance").insert(records);
+
+            if (error) { toast("Error saving: " + error.message, "error"); }
+            else { toast(`Attendance saved for ${records.length} students!`); }
+
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Save Attendance`;
+        }
+
+        loadSubjects();
+    </script>
+</body>
+
+</html>
